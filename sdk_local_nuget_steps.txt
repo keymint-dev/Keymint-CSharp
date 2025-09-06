@@ -1,0 +1,90 @@
+Steps to Push and Install the SDK to a Local NuGet Source
+==========================================================
+
+1. Create a local NuGet feed (one-time setup)
+---------------------------------------------
+Choose a folder to act as your local NuGet repository, e.g.:
+
+    mkdir C:\nuget-local
+    dotnet nuget add source C:\nuget-local --name LocalSource
+
+This adds a named NuGet source called LocalSource.
+
+----------------------------------------------------------
+
+2. Update your SDK .csproj with package metadata
+------------------------------------------------
+Inside your SDK project (Csharp-Sdk.csproj), add metadata:
+
+    <Project Sdk="Microsoft.NET.Sdk">
+      <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageId>keymint-csharp-sdk</PackageId>
+        <Version>1.0.0</Version>
+        <Authors>Daemonlite</Authors>
+        <Company>Keymint.dev</Company>
+        <Description>Keymint SDK built in C#</Description>
+        <RepositoryUrl>https://github.com/keymint-dev/Keymint-Csharp</RepositoryUrl>
+        <RootNamespace>Keymint.CsharpSdk</RootNamespace>
+      </PropertyGroup>
+    </Project>
+
+----------------------------------------------------------
+
+3. Build and pack the SDK
+-------------------------
+Run:
+
+    dotnet pack -c Release
+
+This generates a .nupkg file in:
+
+    bin\Release\keymint-csharp-sdk.1.0.0.nupkg
+
+----------------------------------------------------------
+
+4. Push the package to the local feed
+-------------------------------------
+Run:
+
+    dotnet nuget push "bin\Release\keymint-csharp-sdk.1.0.0.nupkg" -s LocalSource
+
+This copies the .nupkg into your C:\nuget-local feed.
+
+----------------------------------------------------------
+
+5. Consume the package in another project
+-----------------------------------------
+In your consumer app project:
+
+    dotnet add package keymint-csharp-sdk --version 1.0.0 --source LocalSource
+
+This updates your project to reference the SDK.
+
+----------------------------------------------------------
+
+6. Use the SDK
+--------------
+Inside your consumer code (Program.cs):
+
+    using Keymint.CsharpSdk;
+
+    class Program
+    {
+        static void Main()
+        {
+            var greeter = new Greeter();
+            Console.WriteLine(greeter.SayHello("Keymint Test"));
+        }
+    }
+
+----------------------------------------------------------
+
+7. Run the consumer app
+-----------------------
+    dotnet run
+
+Expected output:
+
+    Hello, Keymint Test!
