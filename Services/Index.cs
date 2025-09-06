@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using System.Web;
+using Microsoft.Extensions.Logging;
 
 
 namespace Keymint.CsharpSdk.Services;
@@ -34,6 +35,7 @@ public class KeyMintApiException : Exception
 public class KeyMintSDK
 {
     private readonly HttpClient _httpClient;
+    private readonly ILogger<KeyMintSDK>? _logger;
 
     public KeyMintSDK(string accessToken, string baseUrl = "https://api.keymint.dev")
     {
@@ -62,6 +64,7 @@ public class KeyMintSDK
         }
         catch (Exception ex)
         {
+            _logger?.LogError(ex.Message);
             throw HandleError(ex);
         }
     }
@@ -81,6 +84,7 @@ public class KeyMintSDK
         }
         catch (Exception ex)
         {
+            _logger?.LogError(ex.Message);
             throw HandleError(ex);
         }
     }
@@ -100,6 +104,7 @@ public class KeyMintSDK
         }
         catch (Exception ex)
         {
+            _logger?.LogError(ex.Message);
             throw HandleError(ex);
         }
     }
@@ -116,6 +121,7 @@ public class KeyMintSDK
         }
         catch (Exception ex)
         {
+            _logger?.LogError(ex.Message);
             throw HandleError(ex);
         }
     }
@@ -140,6 +146,7 @@ public class KeyMintSDK
             }
             catch
             {
+
                 // Fallback if we can't parse the error response
                 throw new KeyMintApiException($"HTTP error: {response.StatusCode} - {response.ReasonPhrase}", -1, response.StatusCode);
             }
@@ -167,6 +174,7 @@ public class KeyMintSDK
         }
         else if (ex is HttpRequestException httpEx)
         {
+            
             return new KeyMintApiException(httpEx.Message, -1, null, httpEx);
         }
         else
@@ -185,7 +193,7 @@ public class KeyMintSDK
         {
             query[param.Key] = param.Value;
         }
-        return query.ToString() ?? "";
+        return query.ToString() ?? string.Empty;
     }
 
     // API Methods
