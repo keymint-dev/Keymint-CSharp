@@ -1,4 +1,4 @@
-namespace Csharp_Sdk.Services
+namespace Keymint.CsharpSdk.Services
 {
     using System;
     using System.Collections.Generic;

@@ -2,7 +2,19 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <RootNamespace>Csharp_Sdk</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <!-- Metadata for NuGet -->
+    <PackageId>keymint-csharp-sdk</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Daemonlite</Authors>
+    <Company>Keymint.dev</Company>
+    <Description>Keymint SDK built in C#</Description>
+    <PackageTags>sdk;keymint;csharp</PackageTags>
+    <RepositoryUrl>https://github.com/keymint-dev/keymint-csharp-sdk</RepositoryUrl>
+
+    <!-- Usings and nullability -->
+    <RootNamespace>Keymint.CsharpSdk</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>

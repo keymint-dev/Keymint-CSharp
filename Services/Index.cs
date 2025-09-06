@@ -3,9 +3,9 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using System.Web;
-using Csharp_Sdk.Services;
 
-namespace Csharp_Sdk;
+
+namespace Keymint.CsharpSdk.Services;
 
 /// <summary>
 /// Exception thrown when the KeyMint API returns an error response
