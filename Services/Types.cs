@@ -27,10 +27,13 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("maxActivations")]
         public string? MaxActivations { get; set; }    // Optional: The maximum number of times the key can be activated.
         [JsonPropertyName("expiryDate")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? ExpiryDate { get; set; }        // Optional: The expiration date of the key in ISO 8601 format.
         [JsonPropertyName("customerId")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? CustomerId { get; set; }   // Optional: The ID of an existing customer to associate with the key.
         [JsonPropertyName("newCustomer")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public NewCustomer? NewCustomer { get; set; }  // Optional: An object to create and associate a new customer with the key.
     }
 
@@ -70,6 +73,7 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("hostId")]
         public string? HostId { get; set; }     // Optional: A unique identifier for the device.
         [JsonPropertyName("deviceTag")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? DeviceTag { get; set; }  // Optional: A user-friendly name for the device.
     }
 
@@ -98,6 +102,7 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; } // Required: The license key to deactivate.
         [JsonPropertyName("hostId")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? HostId { get; set; }     // Optional: The unique identifier of the device to deactivate. If omitted, all devices are deactivated.
     }
 
@@ -353,7 +358,7 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("status")]
         public required bool Status { get; set; }
         [JsonPropertyName("data")]
-        public required CustomerWithKeysData Data { get; set; }
+        public List<CustomerWithKeysData>? Data { get; set; }
         [JsonPropertyName("code")]
         public required int Code { get; set; }
     }
@@ -374,11 +379,11 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("customerId")]
         public required string CustomerId { get; set; }  // Required: The customer ID
         [JsonPropertyName("name")]
-        public string? Name { get; set; }       // Optional: Updated customer name
+        public required string Name { get; set; }       // Required: Updated customer name
         [JsonPropertyName("email")]
-        public string? Email { get; set; }      // Optional: Updated customer email
+        public required string Email { get; set; }      // Required: Updated customer email
         [JsonPropertyName("active")]
-        public bool? Active { get; set; }    // Optional: Customer active status
+        public required bool Active { get; set; }    // Required: Customer active status
     }
 
     /// <summary>
@@ -391,9 +396,9 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("status")]
         public required bool Status { get; set; }
         [JsonPropertyName("message")]
-        public required string Message { get; set; }
+        public string? Message { get; set; }
         [JsonPropertyName("data")]
-        public required Customer Data { get; set; }
+        public Customer? Data { get; set; }
         [JsonPropertyName("code")]
         public required int Code { get; set; }
     }
@@ -465,7 +470,7 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("status")]
         public required bool Status { get; set; }     // Success status
         [JsonPropertyName("message")]
-        public required string Message { get; set; }     // Status message (e.g., "Customer deleted")
+        public string? Message { get; set; } // Optional, API may omit
         [JsonPropertyName("code")]
         public required int Code { get; set; }        // API response code
     }

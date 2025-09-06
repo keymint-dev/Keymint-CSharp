@@ -16,8 +16,8 @@ Welcome to the official KeyMint SDK for C#! This library provides a simple and c
 Here's a complete example of how to use the SDK to create and activate a license key:
 
 ```csharp
-using Csharp_Sdk;
-using Csharp_Sdk.Services;
+using Keymint.CsharpSdk;
+using Keymint.CsharpSdk.Services;
 
 class Program
 {
@@ -95,7 +95,7 @@ dotnet add package KeyMint.CSharp.Sdk
 First, create an instance of `KeyMintSDK` with your access token. You can find your access token in your [KeyMint dashboard](https://app.keymint.dev/dashboard/developer/access-tokens).
 
 ```csharp
-using Csharp_Sdk;
+using Keymint.CsharpSdk;
 
 var accessToken = Environment.GetEnvironmentVariable("KEYMINT_ACCESS_TOKEN");
 if (string.IsNullOrEmpty(accessToken))

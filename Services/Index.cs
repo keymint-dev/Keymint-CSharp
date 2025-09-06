@@ -146,21 +146,27 @@ public class KeyMintSDK
             }
             catch
             {
-
                 // Fallback if we can't parse the error response
                 throw new KeyMintApiException($"HTTP error: {response.StatusCode} - {response.ReasonPhrase}", -1, response.StatusCode);
             }
-            
             throw new KeyMintApiException($"HTTP error: {response.StatusCode} - {response.ReasonPhrase}", -1, response.StatusCode);
         }
 
-        var content = await response.Content.ReadFromJsonAsync<T>();
-        if (content == null)
+        var rawJson = await response.Content.ReadAsStringAsync();
+        try
         {
-            throw new KeyMintApiException("Failed to deserialize API response", -1, response.StatusCode);
+            var content = System.Text.Json.JsonSerializer.Deserialize<T>(rawJson);
+            if (content == null)
+            {
+                throw new KeyMintApiException("Failed to deserialize API response", -1, response.StatusCode);
+            }
+            return content;
         }
-
-        return content;
+        catch (System.Text.Json.JsonException jsonEx)
+        {
+            Console.Error.WriteLine($"[DEBUG] Failed to deserialize response to {typeof(T)}. Raw JSON:\n{rawJson}");
+            throw new KeyMintApiException($"Deserialization error: {jsonEx.Message}", -1, response.StatusCode, jsonEx);
+        }
     }
 
     /// <summary>
@@ -198,51 +204,106 @@ public class KeyMintSDK
 
     // API Methods
 
+    /// <summary>
+    /// Creates a new license key.
+    /// </summary>
+    /// <param name="parameters">The parameters for key creation.</param>
+    /// <returns>The created key response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<CreateKeyResponse> CreateKey(CreateKeyParams parameters)
     {
-        return await HandleRequest<CreateKeyResponse>("/key", parameters);
+        var response = await _httpClient.PostAsJsonAsync("/key", parameters);
+        return await HandleResponse<CreateKeyResponse>(response);
     }
 
+    /// <summary>
+    /// Activates a license key.
+    /// </summary>
+    /// <param name="parameters">The parameters for key activation.</param>
+    /// <returns>The activation response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<ActivateKeyResponse> ActivateKey(ActivateKeyParams parameters)
     {
-        return await HandleRequest<ActivateKeyResponse>("/key/activate", parameters);
+        var response = await _httpClient.PostAsJsonAsync("/key/activate", parameters);
+        return await HandleResponse<ActivateKeyResponse>(response);
     }
 
+    /// <summary>
+    /// Deactivates a license key.
+    /// </summary>
+    /// <param name="parameters">The parameters for key deactivation.</param>
+    /// <returns>The deactivation response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<DeactivateKeyResponse> DeactivateKey(DeactivateKeyParams parameters)
     {
-        return await HandleRequest<DeactivateKeyResponse>("/key/deactivate", parameters);
+        var response = await _httpClient.PostAsJsonAsync("/key/deactivate", parameters);
+        return await HandleResponse<DeactivateKeyResponse>(response);
     }
 
+    /// <summary>
+    /// Retrieves a license key by product and license key.
+    /// </summary>
+    /// <param name="parameters">The parameters for key retrieval.</param>
+    /// <returns>The key response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<GetKeyResponse> GetKey(GetKeyParams parameters)
     {
-        var queryParams = new Dictionary<string, string>
-        {
-            { "productId", parameters.ProductId },
-            { "licenseKey", parameters.LicenseKey }
-        };
-        return await HandleGetRequest<GetKeyResponse>("/key", queryParams);
+        var fullEndpoint = $"/key?productId={parameters.ProductId}&licenseKey={parameters.LicenseKey}";
+        var response = await _httpClient.GetAsync(fullEndpoint);
+        return await HandleResponse<GetKeyResponse>(response);
     }
 
+    /// <summary>
+    /// Blocks a license key.
+    /// </summary>
+    /// <param name="parameters">The parameters for blocking the key.</param>
+    /// <returns>The block response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<BlockKeyResponse> BlockKey(BlockKeyParams parameters)
     {
-        return await HandleRequest<BlockKeyResponse>("/key/block", parameters);
+        var response = await _httpClient.PostAsJsonAsync("/key/block", parameters);
+        return await HandleResponse<BlockKeyResponse>(response);
     }
 
+    /// <summary>
+    /// Unblocks a license key.
+    /// </summary>
+    /// <param name="parameters">The parameters for unblocking the key.</param>
+    /// <returns>The unblock response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<UnblockKeyResponse> UnblockKey(UnblockKeyParams parameters)
     {
-        return await HandleRequest<UnblockKeyResponse>("/key/unblock", parameters);
+        var response = await _httpClient.PostAsJsonAsync("/key/unblock", parameters);
+        return await HandleResponse<UnblockKeyResponse>(response);
     }
 
+    /// <summary>
+    /// Creates a new customer.
+    /// </summary>
+    /// <param name="parameters">The parameters for customer creation.</param>
+    /// <returns>The created customer response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<CreateCustomerResponse> CreateCustomer(CreateCustomerParams parameters)
     {
         return await HandleRequest<CreateCustomerResponse>("/customer", parameters);
     }
 
+    /// <summary>
+    /// Retrieves all customers.
+    /// </summary>
+    /// <returns>The response containing all customers.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<GetAllCustomersResponse> GetAllCustomers()
     {
         return await HandleGetRequest<GetAllCustomersResponse>("/customer");
     }
 
+    /// <summary>
+    /// Retrieves a customer and their keys by customer ID.
+    /// </summary>
+    /// <param name="parameters">The parameters for retrieval.</param>
+    /// <returns>The customer with keys response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<GetCustomerWithKeysResponse> GetCustomerWithKeys(GetCustomerWithKeysParams parameters)
     {
         var queryParams = new Dictionary<string, string>
@@ -252,26 +313,57 @@ public class KeyMintSDK
         return await HandleGetRequest<GetCustomerWithKeysResponse>("/customer/keys", queryParams);
     }
 
+    /// <summary>
+    /// Updates a customer by ID.
+    /// </summary>
+    /// <param name="parameters">The parameters for updating the customer.</param>
+    /// <returns>The update response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<UpdateCustomerResponse> UpdateCustomer(UpdateCustomerParams parameters)
     {
         return await HandlePutRequest<UpdateCustomerResponse>("/customer/by-id", parameters);
     }
 
+    /// <summary>
+    /// Deletes a customer by ID.
+    /// </summary>
+    /// <param name="parameters">The parameters for deletion.</param>
+    /// <returns>The delete response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<DeleteCustomerResponse> DeleteCustomer(DeleteCustomerParams parameters)
     {
-        var queryParams = new Dictionary<string, string>
-        {
-            { "customerId", parameters.CustomerId }
-        };
-        return await HandleDeleteRequest<DeleteCustomerResponse>("/customer/by-id", queryParams);
+        var fullEndpoint = $"/customer/by-id?customerId={parameters.CustomerId}";
+        var response = await _httpClient.DeleteAsync(fullEndpoint);
+        return await HandleResponse<DeleteCustomerResponse>(response);
     }
 
+    /// <summary>
+    /// Toggles the status (enable/disable) of a customer by ID.
+    /// </summary>
+    /// <param name="parameters">The parameters for toggling status.</param>
+    /// <returns>The toggle status response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<ToggleCustomerStatusResponse> ToggleCustomerStatus(ToggleCustomerStatusParams parameters)
     {
-        var requestParams = new { customerId = parameters.CustomerId };
-        return await HandleRequest<ToggleCustomerStatusResponse>("/customer/disable", requestParams);
+        var fullEndpoint = $"/customer/disable?customerId={parameters.CustomerId}";
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync(fullEndpoint, new { });
+            return await HandleResponse<ToggleCustomerStatusResponse>(response);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex.Message);
+            throw HandleError(ex);
+        }
     }
 
+    /// <summary>
+    /// Retrieves a customer by ID.
+    /// </summary>
+    /// <param name="parameters">The parameters for retrieval.</param>
+    /// <returns>The customer response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
     public async Task<GetCustomerByIdResponse> GetCustomerById(GetCustomerByIdParams parameters)
     {
         var queryParams = new Dictionary<string, string>

@@ -22,3 +22,24 @@ Thumbs.db
 # IDE & Editor specific
 .vscode/
 .idea/
+
+# NuGet packages
+*.nupkg
+*.nuspec
+
+# Build results
+*.dll
+*.pdb
+*.exe
+
+# MSBuild files
+*.cache
+*.json
+*.g.props
+*.g.targets
+*.dgspec.json
+*.sourcelink.json
+*.editorconfig
+*.FileListAbsolute.txt
+
+sdk_local_nuget_steps.txt
