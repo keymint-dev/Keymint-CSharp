@@ -1,0 +1,24 @@
+# Csharp & dotnet
+
+# Dependencies
+obj/
+bin/
+# Build output
+dist/
+
+# npm pack artifacts
+*.tgz
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE & Editor specific
+.vscode/
+.idea/
