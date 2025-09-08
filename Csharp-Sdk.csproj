@@ -5,21 +5,27 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
     <!-- Metadata for NuGet -->
-    <PackageId>keymint-csharp-sdk</PackageId>
-    <Version>1.0.0</Version>
+    <PackageId>KeyMint</PackageId>
+    <Version>1.0.1</Version>
     <Authors>Daemonlite</Authors>
     <Company>Keymint.dev</Company>
-    <Description>Keymint SDK built in C#</Description>
-    <PackageTags>sdk;keymint;csharp</PackageTags>
+    <Title>KeyMint</Title>
+    <Description>Official KeyMint SDK for C#</Description>
+    <PackageTags>keymint;sdk;license;api</PackageTags>
     <RepositoryUrl>https://github.com/keymint-dev/keymint-csharp-sdk</RepositoryUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
 
     <!-- Usings and nullability -->
-    <RootNamespace>Keymint.CsharpSdk</RootNamespace>
+    <RootNamespace>KeyMint</RootNamespace>
+    <AssemblyName>KeyMint</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="LICENSE" Pack="true" PackagePath="" />
+    <None Include="README.md" Pack="true" PackagePath="" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.8" />
   </ItemGroup>
 
