@@ -6,7 +6,7 @@ using System.Web;
 using Microsoft.Extensions.Logging;
 
 
-namespace Keymint.CsharpSdk.Services;
+namespace KeyMint.Services;
 
 /// <summary>
 /// Exception thrown when the KeyMint API returns an error response
@@ -37,7 +37,7 @@ public class KeyMintSDK
     private readonly HttpClient _httpClient;
     private readonly ILogger<KeyMintSDK>? _logger;
 
-    public KeyMintSDK(string accessToken, string baseUrl = "https://api.keymint.dev")
+    public KeyMintSDK(string accessToken, string baseUrl = "https://api.keymint.dev", ILogger<KeyMintSDK>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(accessToken, nameof(accessToken));
 
@@ -50,106 +50,113 @@ public class KeyMintSDK
             new AuthenticationHeaderValue("Bearer", accessToken);
         _httpClient.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/json"));
+        _logger = logger;
     }
 
     /// <summary>
     /// Generic method to handle POST requests
     /// </summary>
-    private async Task<T> HandleRequest<T>(string endpoint, object parameters)
+    private async Task<KeyMintResult<T>> HandleRequest<T>(string endpoint, object parameters, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(endpoint, parameters);
-            return await HandleResponse<T>(response);
+            var response = await _httpClient.PostAsJsonAsync(endpoint, parameters, cancellationToken).ConfigureAwait(false);
+            return await HandleResponse<T>(response).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex.Message);
-            throw HandleError(ex);
+            _logger?.LogError(ex, "Error in POST {Endpoint}", endpoint);
+            return KeyMintResult<T>.Failure(new KeyMintApiError { Message = ex.Message, Code = -1 });
         }
     }
 
     /// <summary>
     /// Generic method to handle GET requests
     /// </summary>
-    private async Task<T> HandleGetRequest<T>(string endpoint, Dictionary<string, string>? queryParams = null)
+    private async Task<KeyMintResult<T>> HandleGetRequest<T>(string endpoint, Dictionary<string, string>? queryParams = null, CancellationToken cancellationToken = default)
     {
         try
         {
             var queryString = queryParams != null ? ToQueryString(queryParams) : string.Empty;
             var fullEndpoint = string.IsNullOrEmpty(queryString) ? endpoint : $"{endpoint}?{queryString}";
-            
-            var response = await _httpClient.GetAsync(fullEndpoint);
-            return await HandleResponse<T>(response);
+            var response = await _httpClient.GetAsync(fullEndpoint, cancellationToken).ConfigureAwait(false);
+            return await HandleResponse<T>(response).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex.Message);
-            throw HandleError(ex);
+            _logger?.LogError(ex, "Error in GET {Endpoint}", endpoint);
+            return KeyMintResult<T>.Failure(new KeyMintApiError { Message = ex.Message, Code = -1 });
         }
     }
 
     /// <summary>
     /// Generic method to handle DELETE requests
     /// </summary>
-    private async Task<T> HandleDeleteRequest<T>(string endpoint, Dictionary<string, string>? queryParams = null)
+    private async Task<KeyMintResult<T>> HandleDeleteRequest<T>(string endpoint, Dictionary<string, string>? queryParams = null, CancellationToken cancellationToken = default)
     {
         try
         {
             var queryString = queryParams != null ? ToQueryString(queryParams) : string.Empty;
             var fullEndpoint = string.IsNullOrEmpty(queryString) ? endpoint : $"{endpoint}?{queryString}";
-            
-            var response = await _httpClient.DeleteAsync(fullEndpoint);
-            return await HandleResponse<T>(response);
+            var response = await _httpClient.DeleteAsync(fullEndpoint, cancellationToken).ConfigureAwait(false);
+            return await HandleResponse<T>(response).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex.Message);
-            throw HandleError(ex);
+            _logger?.LogError(ex, "Error in DELETE {Endpoint}", endpoint);
+            return KeyMintResult<T>.Failure(new KeyMintApiError { Message = ex.Message, Code = -1 });
         }
     }
 
     /// <summary>
     /// Generic method to handle PUT requests
     /// </summary>
-    private async Task<T> HandlePutRequest<T>(string endpoint, object parameters)
+    private async Task<KeyMintResult<T>> HandlePutRequest<T>(string endpoint, object parameters, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.PutAsJsonAsync(endpoint, parameters);
-            return await HandleResponse<T>(response);
+            var response = await _httpClient.PutAsJsonAsync(endpoint, parameters, cancellationToken).ConfigureAwait(false);
+            return await HandleResponse<T>(response).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex.Message);
-            throw HandleError(ex);
+            _logger?.LogError(ex, "Error in PUT {Endpoint}", endpoint);
+            return KeyMintResult<T>.Failure(new KeyMintApiError { Message = ex.Message, Code = -1 });
         }
     }
 
     /// <summary>
-    /// Handles HTTP response and deserializes the content
+    /// Handles HTTP response and deserializes the content, returning a result object (never throws for API errors)
     /// </summary>
-    private async Task<T> HandleResponse<T>(HttpResponseMessage response)
+    private async Task<KeyMintResult<T>> HandleResponse<T>(HttpResponseMessage response)
     {
         if (!response.IsSuccessStatusCode)
         {
+            string rawError = await response.Content.ReadAsStringAsync();
             try
             {
-                var errorContent = await response.Content.ReadFromJsonAsync<KeyMintApiError>();
+                var errorContent = System.Text.Json.JsonSerializer.Deserialize<KeyMintApiError>(rawError);
                 if (errorContent != null)
                 {
-                    throw new KeyMintApiException(errorContent.Message, errorContent.Code, response.StatusCode)
-                    {
-                        ApiError = errorContent
-                    };
+                    _logger?.LogError("API Error: {StatusCode} {ReasonPhrase} | {Error}", (int)response.StatusCode, response.ReasonPhrase, rawError);
+                    return KeyMintResult<T>.Failure(errorContent);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback if we can't parse the error response
-                throw new KeyMintApiException($"HTTP error: {response.StatusCode} - {response.ReasonPhrase}", -1, response.StatusCode);
+                _logger?.LogError(ex, "Failed to parse error response. Status: {StatusCode} {ReasonPhrase}. Raw: {RawError}", (int)response.StatusCode, response.ReasonPhrase, rawError);
+                return KeyMintResult<T>.Failure(new KeyMintApiError {
+                    Message = $"HTTP error: {response.StatusCode} - {response.ReasonPhrase}. Response: {rawError}",
+                    Code = -1,
+                    Status = (int?)response.StatusCode
+                });
             }
-            throw new KeyMintApiException($"HTTP error: {response.StatusCode} - {response.ReasonPhrase}", -1, response.StatusCode);
+            _logger?.LogError("HTTP error: {StatusCode} - {ReasonPhrase}. Response: {RawError}", (int)response.StatusCode, response.ReasonPhrase, rawError);
+            return KeyMintResult<T>.Failure(new KeyMintApiError {
+                Message = $"HTTP error: {response.StatusCode} - {response.ReasonPhrase}. Response: {rawError}",
+                Code = -1,
+                Status = (int?)response.StatusCode
+            });
         }
 
         var rawJson = await response.Content.ReadAsStringAsync();
@@ -158,14 +165,22 @@ public class KeyMintSDK
             var content = System.Text.Json.JsonSerializer.Deserialize<T>(rawJson);
             if (content == null)
             {
-                throw new KeyMintApiException("Failed to deserialize API response", -1, response.StatusCode);
+                return KeyMintResult<T>.Failure(new KeyMintApiError {
+                    Message = "Failed to deserialize API response",
+                    Code = -1,
+                    Status = (int?)response.StatusCode
+                });
             }
-            return content;
+            return KeyMintResult<T>.Success(content);
         }
         catch (System.Text.Json.JsonException jsonEx)
         {
-            Console.Error.WriteLine($"[DEBUG] Failed to deserialize response to {typeof(T)}. Raw JSON:\n{rawJson}");
-            throw new KeyMintApiException($"Deserialization error: {jsonEx.Message}", -1, response.StatusCode, jsonEx);
+            _logger?.LogError(jsonEx, "Failed to deserialize response to {Type}. Raw JSON: {RawJson}", typeof(T), rawJson);
+            return KeyMintResult<T>.Failure(new KeyMintApiError {
+                Message = $"Deserialization error: {jsonEx.Message}",
+                Code = -1,
+                Status = (int?)response.StatusCode
+            });
         }
     }
 
@@ -208,24 +223,26 @@ public class KeyMintSDK
     /// Creates a new license key.
     /// </summary>
     /// <param name="parameters">The parameters for key creation.</param>
-    /// <returns>The created key response.</returns>
-    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<CreateKeyResponse> CreateKey(CreateKeyParams parameters)
+    /// <returns>The created key response or error.</returns>
+    public async Task<KeyMintResult<CreateKeyResponse>> CreateKey(CreateKeyParams parameters, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.PostAsJsonAsync("/key", parameters);
-        return await HandleResponse<CreateKeyResponse>(response);
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<CreateKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid CreateKeyParams", Code = -1 });
+        var response = await _httpClient.PostAsJsonAsync("/key", parameters, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<CreateKeyResponse>(response).ConfigureAwait(false);
     }
 
     /// <summary>
     /// Activates a license key.
     /// </summary>
     /// <param name="parameters">The parameters for key activation.</param>
-    /// <returns>The activation response.</returns>
-    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<ActivateKeyResponse> ActivateKey(ActivateKeyParams parameters)
+    /// <returns>The activation response or error.</returns>
+    public async Task<KeyMintResult<ActivateKeyResponse>> ActivateKey(ActivateKeyParams parameters, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.PostAsJsonAsync("/key/activate", parameters);
-        return await HandleResponse<ActivateKeyResponse>(response);
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<ActivateKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid ActivateKeyParams", Code = -1 });
+        var response = await _httpClient.PostAsJsonAsync("/key/activate", parameters, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<ActivateKeyResponse>(response).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -234,10 +251,12 @@ public class KeyMintSDK
     /// <param name="parameters">The parameters for key deactivation.</param>
     /// <returns>The deactivation response.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<DeactivateKeyResponse> DeactivateKey(DeactivateKeyParams parameters)
+    public async Task<KeyMintResult<DeactivateKeyResponse>> DeactivateKey(DeactivateKeyParams parameters, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.PostAsJsonAsync("/key/deactivate", parameters);
-        return await HandleResponse<DeactivateKeyResponse>(response);
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<DeactivateKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid DeactivateKeyParams", Code = -1 });
+        var response = await _httpClient.PostAsJsonAsync("/key/deactivate", parameters, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<DeactivateKeyResponse>(response).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -246,11 +265,13 @@ public class KeyMintSDK
     /// <param name="parameters">The parameters for key retrieval.</param>
     /// <returns>The key response.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<GetKeyResponse> GetKey(GetKeyParams parameters)
+    public async Task<KeyMintResult<GetKeyResponse>> GetKey(GetKeyParams parameters, CancellationToken cancellationToken = default)
     {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<GetKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid GetKeyParams", Code = -1 });
         var fullEndpoint = $"/key?productId={parameters.ProductId}&licenseKey={parameters.LicenseKey}";
-        var response = await _httpClient.GetAsync(fullEndpoint);
-        return await HandleResponse<GetKeyResponse>(response);
+        var response = await _httpClient.GetAsync(fullEndpoint, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<GetKeyResponse>(response).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -259,10 +280,12 @@ public class KeyMintSDK
     /// <param name="parameters">The parameters for blocking the key.</param>
     /// <returns>The block response.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<BlockKeyResponse> BlockKey(BlockKeyParams parameters)
+    public async Task<KeyMintResult<BlockKeyResponse>> BlockKey(BlockKeyParams parameters, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.PostAsJsonAsync("/key/block", parameters);
-        return await HandleResponse<BlockKeyResponse>(response);
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<BlockKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid BlockKeyParams", Code = -1 });
+        var response = await _httpClient.PostAsJsonAsync("/key/block", parameters, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<BlockKeyResponse>(response).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -271,10 +294,12 @@ public class KeyMintSDK
     /// <param name="parameters">The parameters for unblocking the key.</param>
     /// <returns>The unblock response.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<UnblockKeyResponse> UnblockKey(UnblockKeyParams parameters)
+    public async Task<KeyMintResult<UnblockKeyResponse>> UnblockKey(UnblockKeyParams parameters, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.PostAsJsonAsync("/key/unblock", parameters);
-        return await HandleResponse<UnblockKeyResponse>(response);
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<UnblockKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid UnblockKeyParams", Code = -1 });
+        var response = await _httpClient.PostAsJsonAsync("/key/unblock", parameters, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<UnblockKeyResponse>(response).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -283,9 +308,11 @@ public class KeyMintSDK
     /// <param name="parameters">The parameters for customer creation.</param>
     /// <returns>The created customer response.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<CreateCustomerResponse> CreateCustomer(CreateCustomerParams parameters)
+    public async Task<KeyMintResult<CreateCustomerResponse>> CreateCustomer(CreateCustomerParams parameters, CancellationToken cancellationToken = default)
     {
-        return await HandleRequest<CreateCustomerResponse>("/customer", parameters);
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<CreateCustomerResponse>.Failure(new KeyMintApiError { Message = "Invalid CreateCustomerParams", Code = -1 });
+        return await HandleRequest<CreateCustomerResponse>("/customer", parameters, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -293,9 +320,9 @@ public class KeyMintSDK
     /// </summary>
     /// <returns>The response containing all customers.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<GetAllCustomersResponse> GetAllCustomers()
+    public async Task<KeyMintResult<GetAllCustomersResponse>> GetAllCustomers(CancellationToken cancellationToken = default)
     {
-        return await HandleGetRequest<GetAllCustomersResponse>("/customer");
+        return await HandleGetRequest<GetAllCustomersResponse>("/customer", null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -304,13 +331,15 @@ public class KeyMintSDK
     /// <param name="parameters">The parameters for retrieval.</param>
     /// <returns>The customer with keys response.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<GetCustomerWithKeysResponse> GetCustomerWithKeys(GetCustomerWithKeysParams parameters)
+    public async Task<KeyMintResult<GetCustomerWithKeysResponse>> GetCustomerWithKeys(GetCustomerWithKeysParams parameters, CancellationToken cancellationToken = default)
     {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<GetCustomerWithKeysResponse>.Failure(new KeyMintApiError { Message = "Invalid GetCustomerWithKeysParams", Code = -1 });
         var queryParams = new Dictionary<string, string>
         {
             { "customerId", parameters.CustomerId }
         };
-        return await HandleGetRequest<GetCustomerWithKeysResponse>("/customer/keys", queryParams);
+        return await HandleGetRequest<GetCustomerWithKeysResponse>("/customer/keys", queryParams, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -319,9 +348,11 @@ public class KeyMintSDK
     /// <param name="parameters">The parameters for updating the customer.</param>
     /// <returns>The update response.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<UpdateCustomerResponse> UpdateCustomer(UpdateCustomerParams parameters)
+    public async Task<KeyMintResult<UpdateCustomerResponse>> UpdateCustomer(UpdateCustomerParams parameters, CancellationToken cancellationToken = default)
     {
-        return await HandlePutRequest<UpdateCustomerResponse>("/customer/by-id", parameters);
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<UpdateCustomerResponse>.Failure(new KeyMintApiError { Message = "Invalid UpdateCustomerParams", Code = -1 });
+        return await HandlePutRequest<UpdateCustomerResponse>("/customer/by-id", parameters, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -330,11 +361,13 @@ public class KeyMintSDK
     /// <param name="parameters">The parameters for deletion.</param>
     /// <returns>The delete response.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<DeleteCustomerResponse> DeleteCustomer(DeleteCustomerParams parameters)
+    public async Task<KeyMintResult<DeleteCustomerResponse>> DeleteCustomer(DeleteCustomerParams parameters, CancellationToken cancellationToken = default)
     {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<DeleteCustomerResponse>.Failure(new KeyMintApiError { Message = "Invalid DeleteCustomerParams", Code = -1 });
         var fullEndpoint = $"/customer/by-id?customerId={parameters.CustomerId}";
-        var response = await _httpClient.DeleteAsync(fullEndpoint);
-        return await HandleResponse<DeleteCustomerResponse>(response);
+        var response = await _httpClient.DeleteAsync(fullEndpoint, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<DeleteCustomerResponse>(response).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -343,19 +376,13 @@ public class KeyMintSDK
     /// <param name="parameters">The parameters for toggling status.</param>
     /// <returns>The toggle status response.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<ToggleCustomerStatusResponse> ToggleCustomerStatus(ToggleCustomerStatusParams parameters)
+    public async Task<KeyMintResult<ToggleCustomerStatusResponse>> ToggleCustomerStatus(ToggleCustomerStatusParams parameters, CancellationToken cancellationToken = default)
     {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<ToggleCustomerStatusResponse>.Failure(new KeyMintApiError { Message = "Invalid ToggleCustomerStatusParams", Code = -1 });
         var fullEndpoint = $"/customer/disable?customerId={parameters.CustomerId}";
-        try
-        {
-            var response = await _httpClient.PostAsJsonAsync(fullEndpoint, new { });
-            return await HandleResponse<ToggleCustomerStatusResponse>(response);
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex.Message);
-            throw HandleError(ex);
-        }
+        var response = await _httpClient.PostAsJsonAsync(fullEndpoint, new { }, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<ToggleCustomerStatusResponse>(response).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -364,12 +391,14 @@ public class KeyMintSDK
     /// <param name="parameters">The parameters for retrieval.</param>
     /// <returns>The customer response.</returns>
     /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
-    public async Task<GetCustomerByIdResponse> GetCustomerById(GetCustomerByIdParams parameters)
+    public async Task<KeyMintResult<GetCustomerByIdResponse>> GetCustomerById(GetCustomerByIdParams parameters, CancellationToken cancellationToken = default)
     {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<GetCustomerByIdResponse>.Failure(new KeyMintApiError { Message = "Invalid GetCustomerByIdParams", Code = -1 });
         var queryParams = new Dictionary<string, string>
         {
             { "customerId", parameters.CustomerId }
         };
-        return await HandleGetRequest<GetCustomerByIdResponse>("/customer/by-id", queryParams);
+        return await HandleGetRequest<GetCustomerByIdResponse>("/customer/by-id", queryParams, cancellationToken).ConfigureAwait(false);
     }
 }

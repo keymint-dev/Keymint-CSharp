@@ -1,4 +1,4 @@
-namespace Keymint.CsharpSdk.Services
+namespace KeyMint.Services
 {
     using System;
     using System.Collections.Generic;
@@ -25,16 +25,21 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("productId")]
         public required string ProductId { get; set; } // Required: The unique identifier of the product.
         [JsonPropertyName("maxActivations")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? MaxActivations { get; set; }    // Optional: The maximum number of times the key can be activated.
         [JsonPropertyName("expiryDate")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? ExpiryDate { get; set; }        // Optional: The expiration date of the key in ISO 8601 format.
+        public DateTime? ExpiryDate { get; set; } // Changed from string? to DateTime?
         [JsonPropertyName("customerId")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? CustomerId { get; set; }   // Optional: The ID of an existing customer to associate with the key.
         [JsonPropertyName("newCustomer")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public NewCustomer? NewCustomer { get; set; }  // Optional: An object to create and associate a new customer with the key.
+        /// <summary>
+        /// Returns true if the required fields are set.
+        /// </summary>
+        public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId);
     }
 
     /// <summary>
@@ -75,6 +80,8 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("deviceTag")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? DeviceTag { get; set; }  // Optional: A user-friendly name for the device.
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
     }
 
     /// <summary>
@@ -104,6 +111,8 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("hostId")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? HostId { get; set; }     // Optional: The unique identifier of the device to deactivate. If omitted, all devices are deactivated.
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
     }
 
     /// <summary>
@@ -125,11 +134,13 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("hostId")]
         public required string HostId { get; set; }           // Updated field name
         [JsonPropertyName("deviceTag")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? DeviceTag { get; set; }       // Updated field name  
         [JsonPropertyName("ipAddress")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? IpAddress { get; set; }       // Updated field name
         [JsonPropertyName("activationTime")]
-        public required string ActivationTime { get; set; }   // Updated field name
+        public DateTime ActivationTime { get; set; }   // Changed from string to DateTime
     }
 
     /// <summary>
@@ -152,7 +163,8 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("activated")]
         public required bool Activated { get; set; }
         [JsonPropertyName("expirationDate")]
-        public string? ExpirationDate { get; set; }  // Updated field name
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public DateTime? ExpirationDate { get; set; }  // Changed from string? to DateTime?
     }
 
     /// <summary>
@@ -179,6 +191,8 @@ namespace Keymint.CsharpSdk.Services
         public required string ProductId { get; set; }  // Required: The unique identifier of the product.
         [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; } // Required: The license key to retrieve.
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
     }
 
     /// <summary>
@@ -209,6 +223,8 @@ namespace Keymint.CsharpSdk.Services
         public required string ProductId { get; set; }  // Required: The unique identifier of the product.
         [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; } // Required: The license key to block.
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
     }
 
     /// <summary>
@@ -231,6 +247,8 @@ namespace Keymint.CsharpSdk.Services
         public required string ProductId { get; set; }  // Required: The unique identifier of the product.
         [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; } // Required: The license key to unblock.
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
     }
 
     /// <summary>
@@ -253,6 +271,8 @@ namespace Keymint.CsharpSdk.Services
         public required string Name { get; set; }     // Required: Customer name
         [JsonPropertyName("email")]
         public required string Email { get; set; }    // Required: Customer email
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(Name) && !string.IsNullOrWhiteSpace(Email);
     }
 
     /// <summary>
@@ -296,9 +316,9 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("active")]
         public required bool Active { get; set; }
         [JsonPropertyName("createdAt")]
-        public required string CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } // Changed from string to DateTime
         [JsonPropertyName("updatedAt")]
-        public required string UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; } // Changed from string to DateTime
         [JsonPropertyName("createdBy")]
         public required string CreatedBy { get; set; }
     }
@@ -325,6 +345,8 @@ namespace Keymint.CsharpSdk.Services
     {
         [JsonPropertyName("customerId")]
         public required string CustomerId { get; set; } // Required: The customer ID
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(CustomerId);
     }
 
     /// <summary>
@@ -345,11 +367,12 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("activated")]
         public required bool Activated { get; set; }
         [JsonPropertyName("expirationDate")]
-        public string? ExpirationDate { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public DateTime? ExpirationDate { get; set; } // Changed from string? to DateTime?
     }
 
     /// <summary>
-    /// Response structure for a successful getCustomerWithKeys API call.
+    /// Response structure for a successful getCustomerWithKeys API call (flat list of license keys).
     /// </summary>
     public class GetCustomerWithKeysResponse
     {
@@ -358,17 +381,9 @@ namespace Keymint.CsharpSdk.Services
         [JsonPropertyName("status")]
         public required bool Status { get; set; }
         [JsonPropertyName("data")]
-        public List<CustomerWithKeysData>? Data { get; set; }
+        public List<CustomerLicenseKey>? Data { get; set; } // Now matches actual API response
         [JsonPropertyName("code")]
         public required int Code { get; set; }
-    }
-
-    public class CustomerWithKeysData
-    {
-        [JsonPropertyName("customer")]
-        public required Customer Customer { get; set; }
-        [JsonPropertyName("licenseKeys")]
-        public required List<CustomerLicenseKey> LicenseKeys { get; set; }
     }
 
     /// <summary>
@@ -384,6 +399,8 @@ namespace Keymint.CsharpSdk.Services
         public required string Email { get; set; }      // Required: Updated customer email
         [JsonPropertyName("active")]
         public required bool Active { get; set; }    // Required: Customer active status
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(CustomerId) && !string.IsNullOrWhiteSpace(Name) && !string.IsNullOrWhiteSpace(Email);
     }
 
     /// <summary>
@@ -410,6 +427,8 @@ namespace Keymint.CsharpSdk.Services
     {
         [JsonPropertyName("customerId")]
         public required string CustomerId { get; set; }  // Required: The customer ID
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(CustomerId);
     }
 
     /// <summary>
@@ -434,6 +453,8 @@ namespace Keymint.CsharpSdk.Services
     {
         [JsonPropertyName("customerId")]
         public required string CustomerId { get; set; }  // Required: The customer ID
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(CustomerId);
     }
 
     /// <summary>
@@ -458,6 +479,8 @@ namespace Keymint.CsharpSdk.Services
     {
         [JsonPropertyName("customerId")]
         public required string CustomerId { get; set; }  // Required: The customer ID
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(CustomerId);
     }
 
     /// <summary>
@@ -473,5 +496,21 @@ namespace Keymint.CsharpSdk.Services
         public string? Message { get; set; } // Optional, API may omit
         [JsonPropertyName("code")]
         public required int Code { get; set; }        // API response code
+    }
+
+    /// <summary>
+    /// Result wrapper for SDK calls, matching Python/Node.js SDKs (success or error, never throws for API errors)
+    /// </summary>
+    public class KeyMintResult<T>
+    {
+        public T? Data { get; }
+        public KeyMintApiError? Error { get; }
+        public bool IsSuccess => Error == null;
+
+        private KeyMintResult(T data) { Data = data; }
+        private KeyMintResult(KeyMintApiError error) { Error = error; }
+
+        public static KeyMintResult<T> Success(T data) => new KeyMintResult<T>(data);
+        public static KeyMintResult<T> Failure(KeyMintApiError error) => new KeyMintResult<T>(error);
     }
 }
