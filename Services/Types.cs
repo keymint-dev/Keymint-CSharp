@@ -36,6 +36,9 @@ namespace KeyMint.Services
         [JsonPropertyName("newCustomer")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public NewCustomer? NewCustomer { get; set; }  // Optional: An object to create and associate a new customer with the key.
+        [JsonPropertyName("allowedHosts")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<string>? AllowedHosts { get; set; } // Optional: List of authorized machine IDs.
         /// <summary>
         /// Returns true if the required fields are set.
         /// </summary>
@@ -97,6 +100,9 @@ namespace KeyMint.Services
         public string? LicenseeName { get; set; }    // Optional: Name of the licensee (updated field name)
         [JsonPropertyName("licenseeEmail")]
         public string? LicenseeEmail { get; set; }   // Optional: Email of the licensee (updated field name)
+        [JsonPropertyName("allowedHosts")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<string>? AllowedHosts { get; set; } // Optional: List of authorized machine IDs.
     }
 
     /// <summary>
@@ -165,6 +171,9 @@ namespace KeyMint.Services
         [JsonPropertyName("expirationDate")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public DateTime? ExpirationDate { get; set; }  // Changed from string? to DateTime?
+        [JsonPropertyName("allowedHosts")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<string>? AllowedHosts { get; set; } // Optional: List of authorized machine IDs.
     }
 
     /// <summary>
@@ -369,6 +378,9 @@ namespace KeyMint.Services
         [JsonPropertyName("expirationDate")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public DateTime? ExpirationDate { get; set; } // Changed from string? to DateTime?
+        [JsonPropertyName("allowedHosts")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<string>? AllowedHosts { get; set; } // Optional: List of authorized machine IDs.
     }
 
     /// <summary>
