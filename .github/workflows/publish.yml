@@ -1,0 +1,20 @@
+name: Publish to NuGet
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Services/Index.cs'
+      - 'Services/Types.cs'
+      - 'Csharp-Sdk.csproj'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0'
+      - run: dotnet pack --configuration Release
+      - run: dotnet nuget push bin/Release/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
