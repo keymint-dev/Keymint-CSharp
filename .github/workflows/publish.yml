@@ -15,5 +15,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0'
-      - run: dotnet pack --configuration Release
+      - run: dotnet restore Csharp-Sdk.csproj
+      - run: dotnet build Csharp-Sdk.csproj --configuration Release --no-restore
+      - run: dotnet pack Csharp-Sdk.csproj --configuration Release --no-build
       - run: dotnet nuget push bin/Release/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source https://api.nuget.org/v3/index.json --skip-duplicate
