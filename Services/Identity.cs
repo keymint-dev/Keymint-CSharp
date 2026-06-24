@@ -248,15 +248,41 @@ public static class KeyMintIdentity
         var newUuid = Guid.NewGuid().ToString();
         var compositeId = $"{newUuid}:{hardwareAnchor}:{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
 
-        // 3. Persist it
-        var dir = Path.GetDirectoryName(filePath)!;
-        if (!Directory.Exists(dir))
+        // 3. Persist it (with fallback for read-only environments)
+        try
         {
-            Directory.CreateDirectory(dir);
+            var dir = Path.GetDirectoryName(filePath)!;
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            File.WriteAllText(filePath, compositeId);
         }
-        File.WriteAllText(filePath, compositeId);
+        catch (Exception)
+        {
+            // Silently fallback to in-memory ID if filesystem is read-only
+        }
 
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(compositeId));
         return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Generates a cryptographic signature for a heartbeat or checkin request
+    /// using the sessionSecret and the rotating nextNonce (passed as the timestamp).
+    /// </summary>
+    /// <param name="sessionId">The 22-character unique session ID.</param>
+    /// <param name="nonce">The rotating nonce string (nextNonce) received from the previous response.</param>
+    /// <param name="sessionSecret">The temporary session secret key received during checkout.</param>
+    /// <returns>A 64-character hexadecimal signature string.</returns>
+    public static string GenerateSessionSignature(string sessionId, string nonce, string sessionSecret)
+    {
+        var keyBytes = Encoding.UTF8.GetBytes(sessionSecret);
+        var messageBytes = Encoding.UTF8.GetBytes($"{sessionId}:{nonce}");
+        
+        using var hmac = new HMACSHA256(keyBytes);
+        var hashBytes = hmac.ComputeHash(messageBytes);
+        
+        return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
 }

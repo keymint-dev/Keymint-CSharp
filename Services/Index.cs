@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
@@ -37,9 +37,9 @@ public class KeyMintSDK
     private readonly HttpClient _httpClient;
     private readonly ILogger<KeyMintSDK>? _logger;
 
-    public KeyMintSDK(string accessToken, string baseUrl = "https://api.keymint.dev", ILogger<KeyMintSDK>? logger = null)
+    public KeyMintSDK(string apiKey, string baseUrl = "https://api.keymint.dev", ILogger<KeyMintSDK>? logger = null)
     {
-        ArgumentNullException.ThrowIfNull(accessToken, nameof(accessToken));
+        ArgumentNullException.ThrowIfNull(apiKey, nameof(apiKey));
 
         _httpClient = new HttpClient
         {
@@ -47,7 +47,7 @@ public class KeyMintSDK
         };
 
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", accessToken);
+            new AuthenticationHeaderValue("Bearer", apiKey);
         _httpClient.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/json"));
         _logger = logger;
@@ -257,6 +257,45 @@ public class KeyMintSDK
             return KeyMintResult<DeactivateKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid DeactivateKeyParams", Code = -1 });
         var response = await _httpClient.PostAsJsonAsync("/key/deactivate", parameters, cancellationToken).ConfigureAwait(false);
         return await HandleResponse<DeactivateKeyResponse>(response).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Checks out a floating license seat.
+    /// </summary>
+    /// <param name="parameters">The parameters for checking out the license.</param>
+    /// <returns>The checkout response containing sessionId and sessionSecret.</returns>
+    public async Task<KeyMintResult<FloatingCheckoutResponse>> FloatingCheckout(FloatingCheckoutParams parameters, CancellationToken cancellationToken = default)
+    {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<FloatingCheckoutResponse>.Failure(new KeyMintApiError { Message = "Invalid FloatingCheckoutParams", Code = -1 });
+        var response = await _httpClient.PostAsJsonAsync("/key/checkout", parameters, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<FloatingCheckoutResponse>(response).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Sends a heartbeat to keep a floating license session alive.
+    /// </summary>
+    /// <param name="parameters">The parameters for the heartbeat.</param>
+    /// <returns>The heartbeat response with extended lease expiry.</returns>
+    public async Task<KeyMintResult<FloatingHeartbeatResponse>> FloatingHeartbeat(FloatingHeartbeatParams parameters, CancellationToken cancellationToken = default)
+    {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<FloatingHeartbeatResponse>.Failure(new KeyMintApiError { Message = "Invalid FloatingHeartbeatParams", Code = -1 });
+        var response = await _httpClient.PostAsJsonAsync("/key/heartbeat", parameters, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<FloatingHeartbeatResponse>(response).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Checks in a floating license session, releasing the seat.
+    /// </summary>
+    /// <param name="parameters">The parameters for checking in the license.</param>
+    /// <returns>The checkin response confirmation.</returns>
+    public async Task<KeyMintResult<FloatingCheckinResponse>> FloatingCheckin(FloatingCheckinParams parameters, CancellationToken cancellationToken = default)
+    {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<FloatingCheckinResponse>.Failure(new KeyMintApiError { Message = "Invalid FloatingCheckinParams", Code = -1 });
+        var response = await _httpClient.PostAsJsonAsync("/key/checkin", parameters, cancellationToken).ConfigureAwait(false);
+        return await HandleResponse<FloatingCheckinResponse>(response).ConfigureAwait(false);
     }
 
     /// <summary>

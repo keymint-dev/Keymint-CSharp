@@ -525,4 +525,120 @@ namespace KeyMint.Services
         public static KeyMintResult<T> Success(T data) => new KeyMintResult<T>(data);
         public static KeyMintResult<T> Failure(KeyMintApiError error) => new KeyMintResult<T>(error);
     }
+
+    /// <summary>
+    /// Parameters for the floating license checkout API endpoint.
+    /// </summary>
+    public class FloatingCheckoutParams
+    {
+        [JsonPropertyName("productId")]
+        public required string ProductId { get; set; }
+        [JsonPropertyName("licenseKey")]
+        public required string LicenseKey { get; set; }
+        [JsonPropertyName("hostId")]
+        public required string HostId { get; set; }
+        [JsonPropertyName("deviceTag")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? DeviceTag { get; set; }
+        [JsonPropertyName("userIdentifier")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? UserIdentifier { get; set; }
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey) && !string.IsNullOrWhiteSpace(HostId);
+    }
+
+    /// <summary>
+    /// Response structure for a successful floating license checkout API call.
+    /// </summary>
+    public class FloatingCheckoutResponse
+    {
+        [JsonPropertyName("code")]
+        public required int Code { get; set; }
+        [JsonPropertyName("message")]
+        public required string Message { get; set; }
+        [JsonPropertyName("sessionId")]
+        public required string SessionId { get; set; }
+        [JsonPropertyName("sessionSecret")]
+        public required string SessionSecret { get; set; }
+        [JsonPropertyName("nextNonce")]
+        public required string NextNonce { get; set; }
+        [JsonPropertyName("expiresAt")]
+        public required string ExpiresAt { get; set; }
+        [JsonPropertyName("heartbeatInterval")]
+        public required int HeartbeatInterval { get; set; }
+        [JsonPropertyName("metadata")]
+        public Dictionary<string, object>? Metadata { get; set; }
+        [JsonPropertyName("currentSessions")]
+        public int? CurrentSessions { get; set; }
+        [JsonPropertyName("maxSessions")]
+        public int? MaxSessions { get; set; }
+        [JsonPropertyName("licenseeName")]
+        public string? LicenseeName { get; set; }
+        [JsonPropertyName("licenseeEmail")]
+        public string? LicenseeEmail { get; set; }
+    }
+
+    /// <summary>
+    /// Parameters for the floating license heartbeat API endpoint.
+    /// </summary>
+    public class FloatingHeartbeatParams
+    {
+        [JsonPropertyName("productId")]
+        public required string ProductId { get; set; }
+        [JsonPropertyName("licenseKey")]
+        public required string LicenseKey { get; set; }
+        [JsonPropertyName("sessionId")]
+        public required string SessionId { get; set; }
+        [JsonPropertyName("timestamp")]
+        public required object Timestamp { get; set; } // holds the rotating nonce string
+        [JsonPropertyName("signature")]
+        public required string Signature { get; set; }
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey) && !string.IsNullOrWhiteSpace(SessionId) && Timestamp != null && !string.IsNullOrWhiteSpace(Signature);
+    }
+
+    /// <summary>
+    /// Response structure for a successful floating license heartbeat API call.
+    /// </summary>
+    public class FloatingHeartbeatResponse
+    {
+        [JsonPropertyName("code")]
+        public required int Code { get; set; }
+        [JsonPropertyName("message")]
+        public required string Message { get; set; }
+        [JsonPropertyName("expiresAt")]
+        public required string ExpiresAt { get; set; }
+        [JsonPropertyName("nextNonce")]
+        public required string NextNonce { get; set; }
+    }
+
+    /// <summary>
+    /// Parameters for the floating license checkin API endpoint.
+    /// </summary>
+    public class FloatingCheckinParams
+    {
+        [JsonPropertyName("productId")]
+        public required string ProductId { get; set; }
+        [JsonPropertyName("licenseKey")]
+        public required string LicenseKey { get; set; }
+        [JsonPropertyName("sessionId")]
+        public required string SessionId { get; set; }
+        [JsonPropertyName("timestamp")]
+        public required object Timestamp { get; set; } // holds the rotating nonce string
+        [JsonPropertyName("signature")]
+        public required string Signature { get; set; }
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey) && !string.IsNullOrWhiteSpace(SessionId) && Timestamp != null && !string.IsNullOrWhiteSpace(Signature);
+    }
+
+    /// <summary>
+    /// Response structure for a successful floating license checkin API call.
+    /// </summary>
+    public class FloatingCheckinResponse
+    {
+        [JsonPropertyName("code")]
+        public required int Code { get; set; }
+        [JsonPropertyName("message")]
+        public required string Message { get; set; }
+    }
 }

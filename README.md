@@ -6,7 +6,7 @@ A professional, production-ready SDK for integrating with the Keymint API in C# 
 - **Async/await**: All API calls are asynchronous.
 - **Strongly typed**: Full support for .NET types and JSON serialization.
 - **Consistent error handling**: All API errors are returned as structured `KeyMintResult` objects.
-- **Modern .NET**: Built for .NET 6.0, 7.0, 8.0, and 9.0.
+- **Machine Identity**: Built-in utilities for hardware fingerprinting and stable installation IDs.
 
 ## Installation
 Add the SDK to your project:
@@ -25,20 +25,25 @@ var productId = Environment.GetEnvironmentVariable("KEYMINT_PRODUCT_ID");
 
 var client = new KeyMintSDK(accessToken);
 
-// Example: Create a key with authorized hosts
+// 1. Get a stable, unique ID for this machine
+var hostId = KeyMintIdentity.GetOrCreateInstallationId();
+
+// 2. Create a key authorized only for this machine
 var result = await client.CreateKey(new CreateKeyParams { 
     ProductId = productId,
-    AllowedHosts = new List<string> { "machine-a" }
+    AllowedHosts = new List<string> { hostId }
 });
 
 if (result.IsSuccess) {
-    var key = result.Data.Key;
-    // ...
+    Console.WriteLine($"Created Key: {result.Data.Key}");
 }
 ```
 
-## Error Handling
-All SDK methods return a `KeyMintResult<T>`. Check `IsSuccess` before using the data. API errors are returned in the `Error` property.
+## Machine Identity
+Keymint provides utilities to uniquely identify machines for node-locking:
+
+- `KeyMintIdentity.GetOrCreateInstallationId()`: **Recommended.** Generates a stable UUID anchored to hardware and persists it to `~/.keymint/installation-id`.
+- `KeyMintIdentity.GetMachineId()`: Generates a SHA-256 fingerprint based on BIOS UUID, OS machine ID, and MAC address.
 
 ## API Methods
 
@@ -60,7 +65,7 @@ All SDK methods return a `KeyMintResult<T>`. Check `IsSuccess` before using the 
 | `CreateCustomer`      | Creates a new customer.                          |
 | `GetAllCustomers`     | Retrieves all customers.                         |
 | `GetCustomerById`     | Gets a specific customer by ID.                  |
-| `getCustomerWithKeys` | Gets a customer along with their license keys.   |
+| `GetCustomerWithKeys` | Gets a customer along with their license keys.   |
 | `UpdateCustomer`      | Updates an existing customer's information.      |
 | `ToggleCustomerStatus`| Toggles a customer's active status.              |
 | `DeleteCustomer`      | Permanently deletes a customer and their keys.   |
