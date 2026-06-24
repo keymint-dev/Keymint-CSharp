@@ -20,10 +20,10 @@ dotnet add package KeyMint
 ```csharp
 using KeyMint.Services;
 
-var accessToken = Environment.GetEnvironmentVariable("KEYMINT_ACCESS_TOKEN");
+var apiKey = Environment.GetEnvironmentVariable("KEYMINT_API_KEY");
 var productId = Environment.GetEnvironmentVariable("KEYMINT_PRODUCT_ID");
 
-var client = new KeyMintSDK(accessToken);
+var client = new KeyMintSDK(apiKey);
 
 // 1. Get a stable, unique ID for this machine
 var hostId = KeyMintIdentity.GetOrCreateInstallationId();
