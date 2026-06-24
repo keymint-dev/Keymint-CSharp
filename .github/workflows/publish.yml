@@ -3,10 +3,6 @@ name: Publish to NuGet
 on:
   push:
     branches: [main]
-    paths:
-      - 'Services/Index.cs'
-      - 'Services/Types.cs'
-      - 'Csharp-Sdk.csproj'
 
 jobs:
   publish:
