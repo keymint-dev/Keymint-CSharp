@@ -440,4 +440,114 @@ public class KeyMintSDK
         };
         return await HandleGetRequest<GetCustomerByIdResponse>("/customer/by-id", queryParams, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Verifies a webhook payload signature received from Keymint.
+    /// </summary>
+    /// <param name="payload">The raw request body as string.</param>
+    /// <param name="header">The value of the "Keymint-Signature" header.</param>
+    /// <param name="secret">The webhook endpoint's signing secret.</param>
+    /// <param name="toleranceSeconds">Time tolerance in seconds to prevent replay attacks. Defaults to 300 (5 minutes).</param>
+    /// <returns>True if signature is valid, false otherwise.</returns>
+    public static bool VerifyWebhookSignature(
+        string payload,
+        string header,
+        string secret,
+        int toleranceSeconds = 300
+    )
+    {
+        if (string.IsNullOrEmpty(header) || string.IsNullOrEmpty(secret))
+        {
+            return false;
+        }
+
+        try
+        {
+            // Parse header (e.g. t=1719374021,v1=signature)
+            string timestampStr = "";
+            string signature = "";
+            
+            var parts = header.Split(',');
+            foreach (var part in parts)
+            {
+                var kv = part.Trim().Split(new[] { '=' }, 2);
+                if (kv.Length == 2)
+                {
+                    if (kv[0] == "t")
+                    {
+                        timestampStr = kv[1];
+                    }
+                    else if (kv[0] == "v1")
+                    {
+                        signature = kv[1];
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(timestampStr) || string.IsNullOrEmpty(signature))
+            {
+                return false;
+            }
+
+            // Check timestamp validity
+            if (!long.TryParse(timestampStr, out long timestampInt))
+            {
+                return false;
+            }
+
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (Math.Abs(now - timestampInt) > toleranceSeconds)
+            {
+                return false;
+            }
+
+            // Verify HMAC signature
+            string signableContent = timestampStr + "." + payload;
+            byte[] secretBytes = System.Text.Encoding.UTF8.GetBytes(secret);
+            byte[] payloadBytes = System.Text.Encoding.UTF8.GetBytes(signableContent);
+
+            byte[] expectedBytes;
+            using (var hmac = new System.Security.Cryptography.HMACSHA256(secretBytes))
+            {
+                expectedBytes = hmac.ComputeHash(payloadBytes);
+            }
+
+            string expectedSignature = BitConverter.ToString(expectedBytes).Replace("-", "").ToLower();
+
+            // Convert client signature from hex string to byte array
+            if (signature.Length != expectedSignature.Length)
+            {
+                return false;
+            }
+
+            byte[] signatureBytes = new byte[signature.Length / 2];
+            for (int i = 0; i < signatureBytes.Length; i++)
+            {
+                signatureBytes[i] = Convert.ToByte(signature.Substring(i * 2, 2), 16);
+            }
+
+            // Timing-safe verification to prevent timing attacks.
+            return FixedTimeEquals(expectedBytes, signatureBytes);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool FixedTimeEquals(byte[] left, byte[] right)
+    {
+        if (left == null || right == null || left.Length != right.Length)
+        {
+            return false;
+        }
+
+        int result = 0;
+        for (int i = 0; i < left.Length; i++)
+        {
+            result |= left[i] ^ right[i];
+        }
+
+        return result == 0;
+    }
 }

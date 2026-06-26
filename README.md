@@ -57,6 +57,9 @@ Keymint provides utilities to uniquely identify machines for node-locking:
 | `GetKey`        | Retrieves detailed information about a key.     |
 | `BlockKey`      | Blocks a license key.                           |
 | `UnblockKey`    | Unblocks a previously blocked license key.      |
+| `FloatingCheckout` | Checks out a floating license seat.           |
+| `FloatingHeartbeat`| Sends a heartbeat to keep a session alive.    |
+| `FloatingCheckin`  | Checks in a session, releasing the seat.      |
 
 ### Customer Management
 
@@ -69,6 +72,12 @@ Keymint provides utilities to uniquely identify machines for node-locking:
 | `UpdateCustomer`      | Updates an existing customer's information.      |
 | `ToggleCustomerStatus`| Toggles a customer's active status.              |
 | `DeleteCustomer`      | Permanently deletes a customer and their keys.   |
+
+### Webhook Verification
+
+| Method                  | Description                                      |
+|-------------------------|--------------------------------------------------|
+| `VerifyWebhookSignature`| Verifies the signature of a webhook request payload. |
 
 ## License
 MIT
