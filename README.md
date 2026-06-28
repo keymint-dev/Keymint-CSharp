@@ -79,6 +79,18 @@ Keymint provides utilities to uniquely identify machines for node-locking:
 |-------------------------|--------------------------------------------------|
 | `VerifyWebhookSignature`| Verifies the signature of a webhook request payload. |
 
+## Idempotency
+
+All mutating SDK methods support idempotency keys to safely retry requests in case of network drops. Pass a `RequestOptions` instance as the optional second argument:
+
+```csharp
+var result = await client.CreateKey(new CreateKeyParams { 
+    ProductId = productId,
+}, new RequestOptions {
+    IdempotencyKey = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+});
+```
+
 ## License
 MIT
 

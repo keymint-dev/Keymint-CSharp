@@ -6,7 +6,7 @@
 
     <!-- Metadata for NuGet -->
     <PackageId>KeyMint</PackageId>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <Authors>Daemonlite</Authors>
     <Company>Keymint.dev</Company>
     <Title>KeyMint</Title>

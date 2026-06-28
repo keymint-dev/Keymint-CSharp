@@ -641,4 +641,12 @@ namespace KeyMint.Services
         [JsonPropertyName("message")]
         public required string Message { get; set; }
     }
+
+    /// <summary>
+    /// Optional configuration parameters for Keymint API requests (e.g. idempotency keys).
+    /// </summary>
+    public class RequestOptions
+    {
+        public string? IdempotencyKey { get; set; }
+    }
 }
