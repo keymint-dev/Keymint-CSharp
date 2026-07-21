@@ -10,8 +10,8 @@
     <Authors>Daemonlite</Authors>
     <Company>Keymint.dev</Company>
     <Title>KeyMint</Title>
-    <Description>Official KeyMint SDK for C#</Description>
-    <PackageTags>keymint;sdk;license;api</PackageTags>
+    <Description>License key validation, activation, and management for .NET/C#. Supports node-locking and offline licensing.</Description>
+    <PackageTags>license-key;validation;activation;node-lock;copy-protection;drm;product-key;offline-licensing;keymint;sdk;license;api</PackageTags>
     <RepositoryUrl>https://github.com/keymint-dev/keymint-csharp-sdk</RepositoryUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
