@@ -147,6 +147,31 @@ public class KeyMintSDK
     }
 
     /// <summary>
+    /// Generic method to handle PATCH requests
+    /// </summary>
+    private async Task<KeyMintResult<T>> HandlePatchRequest<T>(string endpoint, object parameters, RequestOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Patch, endpoint)
+            {
+                Content = JsonContent.Create(parameters)
+            };
+            if (options?.IdempotencyKey != null)
+            {
+                request.Headers.Add("Idempotency-Key", options.IdempotencyKey);
+            }
+            var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            return await HandleResponse<T>(response).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error in PATCH {Endpoint}", endpoint);
+            return KeyMintResult<T>.Failure(new KeyMintApiError { Message = ex.Message, Code = -1 });
+        }
+    }
+
+    /// <summary>
     /// Handles HTTP response and deserializes the content, returning a result object (never throws for API errors)
     /// </summary>
     private async Task<KeyMintResult<T>> HandleResponse<T>(HttpResponseMessage response)
@@ -360,6 +385,27 @@ public class KeyMintSDK
         if (parameters == null || !parameters.IsValid())
             return KeyMintResult<UnblockKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid UnblockKeyParams", Code = -1 });
         return await HandleRequest<UnblockKeyResponse>("/key/unblock", parameters, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Updates an existing license key via PATCH /api/key.
+    /// </summary>
+    public async Task<KeyMintResult<UpdateKeyResponse>> UpdateKey(UpdateKeyParams parameters, RequestOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<UpdateKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid UpdateKeyParams", Code = -1 });
+        return await HandlePatchRequest<UpdateKeyResponse>("/key", parameters, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Signs a license key for offline (air-gapped) validation via POST /api/key/sign.
+    /// Requires admin API key scope and Standard plan.
+    /// </summary>
+    public async Task<KeyMintResult<SignKeyResponse>> SignKey(SignKeyParams parameters, RequestOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<SignKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid SignKeyParams", Code = -1 });
+        return await HandleRequest<SignKeyResponse>("/key/sign", parameters, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
