@@ -194,7 +194,16 @@ namespace KeyMint.Services
         [JsonPropertyName("versionId")]
         public string? VersionId { get; set; }
         [JsonPropertyName("version")]
-        public string? Version { get; set; }
+        public ActivationVersion? Version { get; set; }
+    }
+
+    /// <summary>
+    /// Product version information returned during activation.
+    /// </summary>
+    public class ActivationVersion
+    {
+        [JsonPropertyName("version")]
+        public required string Version { get; set; }
     }
 
     /// <summary>

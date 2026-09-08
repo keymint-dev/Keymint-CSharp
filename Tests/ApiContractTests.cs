@@ -76,7 +76,7 @@ public class ApiContractTests
             message = "License valid",
             metadata = new { tier = "pro" },
             versionId = "version_123",
-            version = "2.0.0"
+            version = new { version = "2.0.0" }
         }));
         var sdk = CreateSdk(handler);
 
@@ -88,7 +88,7 @@ public class ApiContractTests
 
         Assert.True(result.IsSuccess, result.Error?.Message);
         Assert.Equal("version_123", result.Data!.VersionId);
-        Assert.Equal("2.0.0", result.Data.Version);
+        Assert.Equal("2.0.0", result.Data.Version!.Version);
         Assert.Equal("pro", ((JsonElement)result.Data.Metadata!["tier"]).GetString());
     }
 
