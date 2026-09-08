@@ -38,13 +38,21 @@ public class KeyMintSDK
     private readonly ILogger<KeyMintSDK>? _logger;
 
     public KeyMintSDK(string apiKey, string baseUrl = "https://api.keymint.dev", ILogger<KeyMintSDK>? logger = null)
+        : this(apiKey, new HttpClient { BaseAddress = new Uri(baseUrl) }, logger)
+    {
+    }
+
+    /// <summary>
+    /// Creates an SDK client using a caller-provided HTTP client.
+    /// Useful with IHttpClientFactory and for deterministic testing.
+    /// </summary>
+    public KeyMintSDK(string apiKey, HttpClient httpClient, ILogger<KeyMintSDK>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(apiKey, nameof(apiKey));
+        ArgumentNullException.ThrowIfNull(httpClient, nameof(httpClient));
 
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri(baseUrl)
-        };
+        _httpClient = httpClient;
+        _httpClient.BaseAddress ??= new Uri("https://api.keymint.dev");
 
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", apiKey);
@@ -184,6 +192,9 @@ public class KeyMintSDK
                 var errorContent = System.Text.Json.JsonSerializer.Deserialize<KeyMintApiError>(rawError);
                 if (errorContent != null)
                 {
+                    errorContent.Message = errorContent.Error?.Message
+                        ?? errorContent.Message;
+                    errorContent.Status ??= (int)response.StatusCode;
                     _logger?.LogError("API Error: {StatusCode} {ReasonPhrase} | {Error}", (int)response.StatusCode, response.ReasonPhrase, rawError);
                     return KeyMintResult<T>.Failure(errorContent);
                 }
@@ -354,8 +365,13 @@ public class KeyMintSDK
     {
         if (parameters == null || !parameters.IsValid())
             return KeyMintResult<GetKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid GetKeyParams", Code = -1 });
-        var fullEndpoint = $"/key?productId={parameters.ProductId}&licenseKey={parameters.LicenseKey}";
-        var response = await _httpClient.GetAsync(fullEndpoint, cancellationToken).ConfigureAwait(false);
+        var queryString = ToQueryString(new Dictionary<string, string>
+        {
+            { "productId", parameters.ProductId }
+        });
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"/key?{queryString}");
+        request.Headers.Add("x-license-key", parameters.LicenseKey);
+        var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         return await HandleResponse<GetKeyResponse>(response).ConfigureAwait(false);
     }
 

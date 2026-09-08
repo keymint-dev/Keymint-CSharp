@@ -15,10 +15,15 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0'
+          dotnet-version: |
+            8.0.x
+            9.0.x
 
       - name: Restore dependencies
         run: dotnet restore Csharp-Sdk.csproj
 
       - name: Verify Build
         run: dotnet build Csharp-Sdk.csproj --configuration Release --no-restore
+
+      - name: Run contract tests
+        run: dotnet test Tests/KeyMint.Tests.csproj --configuration Release
