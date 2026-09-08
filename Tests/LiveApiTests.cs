@@ -55,16 +55,6 @@ public class LiveApiTests
             Assert.Equal(0, activation.Code);
             Assert.Equal(nodeHostId, activation.Metadata?["hostId"]?.ToString());
 
-            var signed = RequireSuccess(await admin.SignKey(new SignKeyParams
-            {
-                ProductId = productId,
-                LicenseKey = nodeKey,
-                HostId = nodeHostId,
-                Ttl = 300
-            }));
-            Assert.Contains("signedKey", signed.File, StringComparison.Ordinal);
-            Assert.Contains("keyId", signed.File, StringComparison.Ordinal);
-
             var deactivated = RequireSuccess(await client.DeactivateKey(new DeactivateKeyParams
             {
                 ProductId = productId,
@@ -139,6 +129,16 @@ public class LiveApiTests
                 Timestamp = heartbeat.NextNonce,
                 Signature = checkinSignature
             }));
+
+            var signed = RequireSuccess(await admin.SignKey(new SignKeyParams
+            {
+                ProductId = productId,
+                LicenseKey = nodeKey,
+                HostId = nodeHostId,
+                Ttl = 300
+            }));
+            Assert.Contains("signedKey", signed.File, StringComparison.Ordinal);
+            Assert.Contains("keyId", signed.File, StringComparison.Ordinal);
         }
         finally
         {
