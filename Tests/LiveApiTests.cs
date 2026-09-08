@@ -187,7 +187,7 @@ public class LiveApiTests
         return result.Error?.Status == 429;
     }
 
-    private static async Task<T> RequireSuccessAsync<T>(Func<Task<KeyMintResult<T>>> action, int maxAttempts = 5)
+    private static async Task<T> RequireSuccessAsync<T>(Func<Task<KeyMintResult<T>>> action, int maxAttempts = 4)
     {
         KeyMintResult<T>? lastResult = null;
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
@@ -195,8 +195,6 @@ public class LiveApiTests
             lastResult = await action().ConfigureAwait(false);
             if (lastResult.IsSuccess)
             {
-                // Pace requests for free-plan workspaces (10 req/min org-global bucket).
-                await Task.Delay(TimeSpan.FromSeconds(7)).ConfigureAwait(false);
                 return Assert.IsType<T>(lastResult.Data);
             }
 
@@ -205,7 +203,7 @@ public class LiveApiTests
                 break;
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+            await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
         }
 
         Assert.True(lastResult!.IsSuccess, lastResult!.Error?.Message ?? "Keymint API request failed");
