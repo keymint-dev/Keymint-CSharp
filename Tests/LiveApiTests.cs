@@ -26,7 +26,7 @@ public class LiveApiTests
 
         try
         {
-            var created = RequireSuccess(await admin.CreateKey(new CreateKeyParams
+            var created = await RequireSuccessAsync(() => admin.CreateKey(new CreateKeyParams
             {
                 ProductId = productId,
                 MaxActivations = "2",
@@ -38,14 +38,14 @@ public class LiveApiTests
             }));
             nodeKey = Assert.IsType<string>(created.Key);
 
-            var lookup = RequireSuccess(await readOnly.GetKey(new GetKeyParams
+            var lookup = await RequireSuccessAsync(() => readOnly.GetKey(new GetKeyParams
             {
                 ProductId = productId,
                 LicenseKey = nodeKey
             }));
             Assert.Equal(productId, lookup.Data.License.ProductId);
 
-            var activation = RequireSuccess(await client.ActivateKey(new ActivateKeyParams
+            var activation = await RequireSuccessAsync(() => client.ActivateKey(new ActivateKeyParams
             {
                 ProductId = productId,
                 LicenseKey = nodeKey,
@@ -55,7 +55,7 @@ public class LiveApiTests
             Assert.Equal(0, activation.Code);
             Assert.Equal(nodeHostId, activation.Metadata?["hostId"]?.ToString());
 
-            var deactivated = RequireSuccess(await client.DeactivateKey(new DeactivateKeyParams
+            var deactivated = await RequireSuccessAsync(() => client.DeactivateKey(new DeactivateKeyParams
             {
                 ProductId = productId,
                 LicenseKey = nodeKey,
@@ -63,24 +63,24 @@ public class LiveApiTests
             }));
             Assert.Equal(1, deactivated.DevicesRemoved);
 
-            RequireSuccess(await admin.UpdateKey(new UpdateKeyParams
+            await RequireSuccessAsync(() => admin.UpdateKey(new UpdateKeyParams
             {
                 ProductId = productId,
                 LicenseKey = nodeKey,
                 MaxActivations = 3
             }));
-            RequireSuccess(await admin.BlockKey(new BlockKeyParams
+            await RequireSuccessAsync(() => admin.BlockKey(new BlockKeyParams
             {
                 ProductId = productId,
                 LicenseKey = nodeKey
             }));
-            RequireSuccess(await admin.UnblockKey(new UnblockKeyParams
+            await RequireSuccessAsync(() => admin.UnblockKey(new UnblockKeyParams
             {
                 ProductId = productId,
                 LicenseKey = nodeKey
             }));
 
-            var floatingCreated = RequireSuccess(await admin.CreateKey(new CreateKeyParams
+            var floatingCreated = await RequireSuccessAsync(() => admin.CreateKey(new CreateKeyParams
             {
                 ProductId = productId,
                 LicenseType = "floating",
@@ -95,7 +95,7 @@ public class LiveApiTests
             }));
             floatingKey = Assert.IsType<string>(floatingCreated.Key);
 
-            var checkout = RequireSuccess(await client.FloatingCheckout(new FloatingCheckoutParams
+            var checkout = await RequireSuccessAsync(() => client.FloatingCheckout(new FloatingCheckoutParams
             {
                 ProductId = productId,
                 LicenseKey = floatingKey,
@@ -108,7 +108,7 @@ public class LiveApiTests
                 checkout.SessionId,
                 checkout.NextNonce,
                 checkout.SessionSecret);
-            var heartbeat = RequireSuccess(await client.FloatingHeartbeat(new FloatingHeartbeatParams
+            var heartbeat = await RequireSuccessAsync(() => client.FloatingHeartbeat(new FloatingHeartbeatParams
             {
                 ProductId = productId,
                 LicenseKey = floatingKey,
@@ -121,7 +121,7 @@ public class LiveApiTests
                 checkout.SessionId,
                 heartbeat.NextNonce,
                 checkout.SessionSecret);
-            RequireSuccess(await client.FloatingCheckin(new FloatingCheckinParams
+            await RequireSuccessAsync(() => client.FloatingCheckin(new FloatingCheckinParams
             {
                 ProductId = productId,
                 LicenseKey = floatingKey,
@@ -130,7 +130,7 @@ public class LiveApiTests
                 Signature = checkinSignature
             }));
 
-            var signed = RequireSuccess(await admin.SignKey(new SignKeyParams
+            var signed = await RequireSuccessAsync(() => admin.SignKey(new SignKeyParams
             {
                 ProductId = productId,
                 LicenseKey = nodeKey,
@@ -144,22 +144,72 @@ public class LiveApiTests
         {
             if (nodeKey != null)
             {
-                await admin.BlockKey(new BlockKeyParams
+                try
                 {
-                    ProductId = productId,
-                    LicenseKey = nodeKey
-                });
+                    await admin.BlockKey(new BlockKeyParams
+                    {
+                        ProductId = productId,
+                        LicenseKey = nodeKey
+                    });
+                }
+                catch
+                {
+                    // Best-effort cleanup: ignore rate-limit / network failures.
+                }
             }
 
             if (floatingKey != null)
             {
-                await admin.BlockKey(new BlockKeyParams
+                try
                 {
-                    ProductId = productId,
-                    LicenseKey = floatingKey
-                });
+                    await admin.BlockKey(new BlockKeyParams
+                    {
+                        ProductId = productId,
+                        LicenseKey = floatingKey
+                    });
+                }
+                catch
+                {
+                    // Best-effort cleanup: ignore rate-limit / network failures.
+                }
             }
         }
+    }
+
+    private static bool IsRateLimited<T>(KeyMintResult<T> result)
+    {
+        var message = result.Error?.Message ?? string.Empty;
+        if (message.Contains("Too many requests", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return result.Error?.Status == 429;
+    }
+
+    private static async Task<T> RequireSuccessAsync<T>(Func<Task<KeyMintResult<T>>> action, int maxAttempts = 5)
+    {
+        KeyMintResult<T>? lastResult = null;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            lastResult = await action().ConfigureAwait(false);
+            if (lastResult.IsSuccess)
+            {
+                // Pace requests for free-plan workspaces (10 req/min org-global bucket).
+                await Task.Delay(TimeSpan.FromSeconds(7)).ConfigureAwait(false);
+                return Assert.IsType<T>(lastResult.Data);
+            }
+
+            if (!IsRateLimited(lastResult) || attempt == maxAttempts)
+            {
+                break;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+        }
+
+        Assert.True(lastResult!.IsSuccess, lastResult!.Error?.Message ?? "Keymint API request failed");
+        return Assert.IsType<T>(lastResult.Data);
     }
 
     private static T RequireSuccess<T>(KeyMintResult<T> result)
