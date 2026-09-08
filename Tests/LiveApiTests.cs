@@ -23,6 +23,7 @@ public class LiveApiTests
         var nodeHostId = $"ci-node-{runId}";
         string? nodeKey = null;
         string? floatingKey = null;
+        string? customerId = null;
 
         try
         {
@@ -139,6 +140,56 @@ public class LiveApiTests
             }));
             Assert.Contains("signedKey", signed.File, StringComparison.Ordinal);
             Assert.Contains("keyId", signed.File, StringComparison.Ordinal);
+
+            var customerEmail = $"ci-{runId}@example.com";
+            var createdCustomer = await RequireSuccessAsync(() => admin.CreateCustomer(new CreateCustomerParams
+            {
+                Name = "C# SDK CI",
+                Email = customerEmail
+            }));
+            customerId = Assert.IsType<string>(createdCustomer.Data.Id);
+            Assert.Equal(customerEmail, createdCustomer.Data.Email);
+
+            var fetchedCustomer = await RequireSuccessAsync(() => admin.GetCustomerById(new GetCustomerByIdParams
+            {
+                CustomerId = customerId
+            }));
+            Assert.Contains(fetchedCustomer.Data, c => c.Id == customerId);
+
+            var updatedCustomer = await RequireSuccessAsync(() => admin.UpdateCustomer(new UpdateCustomerParams
+            {
+                CustomerId = customerId,
+                Name = "C# SDK CI Updated"
+            }));
+            Assert.Equal("C# SDK CI Updated", updatedCustomer.Data?.Name);
+
+            var allCustomers = await RequireSuccessAsync(() => admin.GetAllCustomers());
+            Assert.Contains(allCustomers.Data, c => c.Id == customerId);
+
+            var customerWithKeys = await RequireSuccessAsync(() => admin.GetCustomerWithKeys(new GetCustomerWithKeysParams
+            {
+                CustomerId = customerId
+            }));
+            Assert.NotNull(customerWithKeys.Data);
+
+            var toggleOff = await RequireSuccessAsync(() => admin.ToggleCustomerStatus(new ToggleCustomerStatusParams
+            {
+                CustomerId = customerId
+            }));
+            Assert.True(toggleOff.Status);
+
+            var toggleOn = await RequireSuccessAsync(() => admin.ToggleCustomerStatus(new ToggleCustomerStatusParams
+            {
+                CustomerId = customerId
+            }));
+            Assert.True(toggleOn.Status);
+
+            var deletedCustomer = await RequireSuccessAsync(() => admin.DeleteCustomer(new DeleteCustomerParams
+            {
+                CustomerId = customerId
+            }));
+            Assert.True(deletedCustomer.Status);
+            customerId = null;
         }
         finally
         {
@@ -166,6 +217,21 @@ public class LiveApiTests
                     {
                         ProductId = productId,
                         LicenseKey = floatingKey
+                    });
+                }
+                catch
+                {
+                    // Best-effort cleanup: ignore rate-limit / network failures.
+                }
+            }
+
+            if (customerId != null)
+            {
+                try
+                {
+                    await admin.DeleteCustomer(new DeleteCustomerParams
+                    {
+                        CustomerId = customerId
                     });
                 }
                 catch
