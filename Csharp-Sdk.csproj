@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
     <!-- Metadata for NuGet -->
     <PackageId>KeyMint</PackageId>
-    <Version>1.4.1</Version>
+    <Version>1.5.0</Version>
     <Authors>Daemonlite</Authors>
     <Company>Keymint.dev</Company>
     <Title>KeyMint</Title>
     <Description>License key validation, activation, and management for .NET/C#. Supports node-locking and offline licensing.</Description>
     <PackageTags>license-key;validation;activation;node-lock;copy-protection;drm;product-key;offline-licensing;keymint;sdk;license;api</PackageTags>
-    <RepositoryUrl>https://github.com/keymint-dev/keymint-csharp-sdk</RepositoryUrl>
+    <RepositoryUrl>https://github.com/keymint-dev/Keymint-CSharp</RepositoryUrl>
     <PackageProjectUrl>https://keymint.dev</PackageProjectUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -25,6 +25,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Tests/**/*.cs" />
+    <None Remove="Tests/**/*.cs" />
     <None Include="LICENSE" Pack="true" PackagePath="" />
     <None Include="README.md" Pack="true" PackagePath="" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.8" />

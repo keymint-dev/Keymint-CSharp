@@ -105,7 +105,9 @@ namespace KeyMint.Services
         [JsonPropertyName("code")]
         public required int Code { get; set; } // API response code (e.g., 0 for success)
         [JsonPropertyName("key")]
-        public required string Key { get; set; }  // The generated license key
+        public string? Key { get; set; }  // The generated license key for single-key creation
+        [JsonPropertyName("keys")]
+        public List<string>? Keys { get; set; } // Generated license keys for bulk creation
     }
 
     /// <summary>
@@ -114,11 +116,26 @@ namespace KeyMint.Services
     public class KeyMintApiError
     {
         [JsonPropertyName("message")]
-        public required string Message { get; set; } // Descriptive error message
+        public string Message { get; set; } = "Keymint API request failed"; // Descriptive error message
         [JsonPropertyName("code")]
-        public required int Code { get; set; }    // API specific error code
+        public int Code { get; set; }    // API numeric error code
         [JsonPropertyName("status")]
         public int? Status { get; set; }  // HTTP status code, optional
+        [JsonPropertyName("error")]
+        public KeyMintApiErrorDetails? Error { get; set; }
+    }
+
+    /// <summary>
+    /// Detailed error information returned by the current Keymint API envelope.
+    /// </summary>
+    public class KeyMintApiErrorDetails
+    {
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
+        [JsonPropertyName("message")]
+        public string? Message { get; set; }
+        [JsonPropertyName("details")]
+        public object? Details { get; set; }
     }
 
     /// <summary>
@@ -172,6 +189,21 @@ namespace KeyMint.Services
         [JsonPropertyName("allowedHosts")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? AllowedHosts { get; set; } // Optional: List of authorized machine IDs.
+        [JsonPropertyName("metadata")]
+        public Dictionary<string, object>? Metadata { get; set; }
+        [JsonPropertyName("versionId")]
+        public string? VersionId { get; set; }
+        [JsonPropertyName("version")]
+        public ActivationVersion? Version { get; set; }
+    }
+
+    /// <summary>
+    /// Product version information returned during activation.
+    /// </summary>
+    public class ActivationVersion
+    {
+        [JsonPropertyName("version")]
+        public required string Version { get; set; }
     }
 
     /// <summary>
@@ -199,6 +231,8 @@ namespace KeyMint.Services
         public required string Message { get; set; } // Confirmation message (e.g., "Device deactivated")
         [JsonPropertyName("code")]
         public required int Code { get; set; }    // API response code (e.g., 0 for success)
+        [JsonPropertyName("devicesRemoved")]
+        public int? DevicesRemoved { get; set; }
     }
 
     /// <summary>
@@ -398,7 +432,7 @@ namespace KeyMint.Services
         [JsonPropertyName("updatedAt")]
         public DateTime UpdatedAt { get; set; } // Changed from string to DateTime
         [JsonPropertyName("createdBy")]
-        public required string CreatedBy { get; set; }
+        public string? CreatedBy { get; set; }
     }
 
     /// <summary>
@@ -512,13 +546,17 @@ namespace KeyMint.Services
     public class ToggleCustomerStatusResponse
     {
         [JsonPropertyName("action")]
-        public required string Action { get; set; }      // Action performed (e.g., "toggleActive")
+        public string? Action { get; set; }
         [JsonPropertyName("status")]
         public required bool Status { get; set; }     // Success status
         [JsonPropertyName("message")]
-        public required string Message { get; set; }     // Status message (e.g., "Customer disabled")
+        public string? Message { get; set; }
         [JsonPropertyName("code")]
-        public required int Code { get; set; }        // API response code
+        public int? Code { get; set; }
+        [JsonPropertyName("customerName")]
+        public string? CustomerName { get; set; }
+        [JsonPropertyName("active")]
+        public bool? Active { get; set; }
     }
 
     /// <summary>
@@ -606,6 +644,12 @@ namespace KeyMint.Services
         [JsonPropertyName("userIdentifier")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? UserIdentifier { get; set; }
+        [JsonPropertyName("timestamp")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public object? Timestamp { get; set; }
+        [JsonPropertyName("signature")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Signature { get; set; }
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey) && !string.IsNullOrWhiteSpace(HostId);
     }
@@ -795,9 +839,7 @@ namespace KeyMint.Services
     /// </summary>
     public class SignKeyResponse
     {
-        [JsonPropertyName("code")]
-        public required int Code { get; set; }
         [JsonPropertyName("file")]
-        public required Dictionary<string, object> File { get; set; }
+        public required string File { get; set; }
     }
 }

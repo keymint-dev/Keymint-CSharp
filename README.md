@@ -2,6 +2,8 @@
 
 A professional, production-ready SDK for integrating with the Keymint API in C# and other .NET languages. Provides robust, async-first access to all major Keymint features, with strong typing and modern error handling.
 
+Requires .NET 8 or later.
+
 ## Features
 - **Async/await**: All API calls are asynchronous.
 - **Strongly typed**: Full support for .NET types and JSON serialization.
@@ -58,7 +60,7 @@ Keymint provides utilities to uniquely identify machines for node-locking:
 | `BlockKey`      | Blocks a license key.                           |
 | `UnblockKey`    | Unblocks a previously blocked license key.      |
 | `UpdateKey`     | Updates an existing license key.                |
-| `SignKey`       | Signs a key for offline (air-gapped) validation.|
+| `SignKey`       | Signs a key for offline (air-gapped) validation using an admin API key.|
 | `FloatingCheckout` | Checks out a floating license seat.           |
 | `FloatingHeartbeat`| Sends a heartbeat to keep a session alive.    |
 | `FloatingCheckin`  | Checks in a session, releasing the seat.      |

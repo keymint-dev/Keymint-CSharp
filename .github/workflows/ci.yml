@@ -1,8 +1,11 @@
 name: SDK CI Validation
 
 on:
+  push:
+    branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build-and-validate:
@@ -15,10 +18,49 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0'
+          dotnet-version: |
+            8.0.x
+            9.0.x
 
       - name: Restore dependencies
         run: dotnet restore Csharp-Sdk.csproj
 
       - name: Verify Build
         run: dotnet build Csharp-Sdk.csproj --configuration Release --no-restore
+
+      - name: Run contract tests
+        run: dotnet test Tests/KeyMint.Tests.csproj --configuration Release --filter "Category!=Live"
+
+  live-api-validation:
+    name: Live API Validation
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Validate live-test configuration
+        env:
+          ADMIN_KEY: ${{ secrets.KEYMINT_TEST_ADMIN_API_KEY }}
+          READONLY_KEY: ${{ secrets.KEYMINT_TEST_READONLY_API_KEY }}
+          CLIENT_KEY: ${{ secrets.KEYMINT_TEST_CLIENT_API_KEY }}
+          PRODUCT_ID: ${{ vars.KEYMINT_TEST_PRODUCT_ID }}
+        run: |
+          test -n "$ADMIN_KEY"
+          test -n "$READONLY_KEY"
+          test -n "$CLIENT_KEY"
+          test -n "$PRODUCT_ID"
+
+      - name: Run live API tests
+        env:
+          KEYMINT_TEST_ADMIN_API_KEY: ${{ secrets.KEYMINT_TEST_ADMIN_API_KEY }}
+          KEYMINT_TEST_READONLY_API_KEY: ${{ secrets.KEYMINT_TEST_READONLY_API_KEY }}
+          KEYMINT_TEST_CLIENT_API_KEY: ${{ secrets.KEYMINT_TEST_CLIENT_API_KEY }}
+          KEYMINT_TEST_PRODUCT_ID: ${{ vars.KEYMINT_TEST_PRODUCT_ID }}
+          KEYMINT_TEST_BASE_URL: https://api.keymint.dev
+        run: dotnet test Tests/KeyMint.Tests.csproj --configuration Release --filter "Category=Live"
