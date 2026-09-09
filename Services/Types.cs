@@ -546,13 +546,17 @@ namespace KeyMint.Services
     public class ToggleCustomerStatusResponse
     {
         [JsonPropertyName("action")]
-        public required string Action { get; set; }      // Action performed (e.g., "toggleActive")
+        public string? Action { get; set; }
         [JsonPropertyName("status")]
         public required bool Status { get; set; }     // Success status
         [JsonPropertyName("message")]
-        public required string Message { get; set; }     // Status message (e.g., "Customer disabled")
+        public string? Message { get; set; }
         [JsonPropertyName("code")]
-        public required int Code { get; set; }        // API response code
+        public int? Code { get; set; }
+        [JsonPropertyName("customerName")]
+        public string? CustomerName { get; set; }
+        [JsonPropertyName("active")]
+        public bool? Active { get; set; }
     }
 
     /// <summary>
