@@ -432,7 +432,7 @@ namespace KeyMint.Services
         [JsonPropertyName("updatedAt")]
         public DateTime UpdatedAt { get; set; } // Changed from string to DateTime
         [JsonPropertyName("createdBy")]
-        public required string CreatedBy { get; set; }
+        public string? CreatedBy { get; set; }
     }
 
     /// <summary>
