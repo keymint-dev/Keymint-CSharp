@@ -36,6 +36,12 @@ public class KeyMintSDK
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<KeyMintSDK>? _logger;
+    public readonly System.Text.Json.JsonSerializerOptions _jsonSerializerOptions = new()
+    {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
 
     public KeyMintSDK(string apiKey, string baseUrl = "https://api.keymint.dev", ILogger<KeyMintSDK>? logger = null)
         : this(apiKey, new HttpClient { BaseAddress = new Uri(baseUrl) }, logger)
@@ -70,7 +76,7 @@ public class KeyMintSDK
         {
             var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
             {
-                Content = JsonContent.Create(parameters)
+                Content = JsonContent.Create(parameters, options: _jsonSerializerOptions)
             };
             if (options?.IdempotencyKey != null)
             {
@@ -138,7 +144,7 @@ public class KeyMintSDK
         {
             var request = new HttpRequestMessage(HttpMethod.Put, endpoint)
             {
-                Content = JsonContent.Create(parameters)
+                Content = JsonContent.Create(parameters, options: _jsonSerializerOptions)
             };
             if (options?.IdempotencyKey != null)
             {
@@ -163,7 +169,7 @@ public class KeyMintSDK
         {
             var request = new HttpRequestMessage(HttpMethod.Patch, endpoint)
             {
-                Content = JsonContent.Create(parameters)
+                Content = JsonContent.Create(parameters, options: _jsonSerializerOptions)
             };
             if (options?.IdempotencyKey != null)
             {
@@ -189,7 +195,7 @@ public class KeyMintSDK
             string rawError = await response.Content.ReadAsStringAsync();
             try
             {
-                var errorContent = System.Text.Json.JsonSerializer.Deserialize<KeyMintApiError>(rawError);
+                var errorContent = System.Text.Json.JsonSerializer.Deserialize<KeyMintApiError>(rawError, options: _jsonSerializerOptions);
                 if (errorContent != null)
                 {
                     errorContent.Message = errorContent.Error?.Message
@@ -219,7 +225,7 @@ public class KeyMintSDK
         var rawJson = await response.Content.ReadAsStringAsync();
         try
         {
-            var content = System.Text.Json.JsonSerializer.Deserialize<T>(rawJson);
+            var content = System.Text.Json.JsonSerializer.Deserialize<T>(rawJson, options: _jsonSerializerOptions);
             if (content == null)
             {
                 return KeyMintResult<T>.Failure(new KeyMintApiError {
@@ -476,7 +482,7 @@ public class KeyMintSDK
             // Server returns a raw JSON array for this endpoint.
             try
             {
-                var list = System.Text.Json.JsonSerializer.Deserialize<List<CustomerLicenseKey>>(raw, options);
+                var list = System.Text.Json.JsonSerializer.Deserialize<List<CustomerLicenseKey>>(raw, options: _jsonSerializerOptions);
                 if (list != null)
                 {
                     return KeyMintResult<GetCustomerWithKeysResponse>.Success(new GetCustomerWithKeysResponse { Data = list });
@@ -487,7 +493,7 @@ public class KeyMintSDK
                 // Fall through to envelope shape below.
             }
 
-            var envelope = System.Text.Json.JsonSerializer.Deserialize<GetCustomerWithKeysResponse>(raw, options);
+            var envelope = System.Text.Json.JsonSerializer.Deserialize<GetCustomerWithKeysResponse>(raw, options: _jsonSerializerOptions);
             if (envelope != null)
             {
                 envelope.Data ??= new List<CustomerLicenseKey>();

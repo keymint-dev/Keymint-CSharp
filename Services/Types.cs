@@ -10,10 +10,8 @@ namespace KeyMint.Services
     /// </summary>
     public class NewCustomer
     {
-        [JsonPropertyName("name")]
         public required string Name { get; set; }
 
-        [JsonPropertyName("email")]
         public string? Email { get; set; } // Optional: Email of the new customer
     }
 
@@ -22,26 +20,12 @@ namespace KeyMint.Services
     /// </summary>
     public class KeyFormat
     {
-        [JsonPropertyName("sections")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? Sections { get; set; }
-        [JsonPropertyName("sectionLength")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? SectionLength { get; set; }
-        [JsonPropertyName("separator")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Separator { get; set; }
-        [JsonPropertyName("charset")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Charset { get; set; }
-        [JsonPropertyName("prefix")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Prefix { get; set; }
-        [JsonPropertyName("suffix")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Suffix { get; set; }
-        [JsonPropertyName("case")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Case { get; set; } // "upper", "lower", or "mixed"
     }
 
@@ -50,46 +34,19 @@ namespace KeyMint.Services
     /// </summary>
     public class CreateKeyParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; } // Required: The unique identifier of the product.
-        [JsonPropertyName("maxActivations")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? MaxActivations { get; set; }    // Optional: The maximum number of times the key can be activated.
-        [JsonPropertyName("expiryDate")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? ExpiryDate { get; set; } // ISO 8601 string, not DateTime
-        [JsonPropertyName("customerId")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? CustomerId { get; set; }   // Optional: The ID of an existing customer to associate with the key.
-        [JsonPropertyName("versionId")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? VersionId { get; set; }    // Optional: The ID of a specific product version to associate with the key.
-        [JsonPropertyName("metadata")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, object>? Metadata { get; set; } // Optional: Custom metadata
-        [JsonPropertyName("newCustomer")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public NewCustomer? NewCustomer { get; set; }  // Optional: An object to create and associate a new customer with the key.
-        [JsonPropertyName("allowedHosts")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? AllowedHosts { get; set; } // Optional: List of authorized machine IDs.
-        [JsonPropertyName("format")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public KeyFormat? Format { get; set; }    // Optional: Custom key format
-        [JsonPropertyName("amountKeys")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? AmountKeys { get; set; }   // Optional: Number of keys to generate at once
-        [JsonPropertyName("licenseType")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? LicenseType { get; set; }  // Optional: "node-locked" or "floating"
-        [JsonPropertyName("maxConcurrentSessions")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? MaxConcurrentSessions { get; set; } // Optional: Max concurrent floating sessions
-        [JsonPropertyName("heartbeatInterval")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? HeartbeatInterval { get; set; }     // Optional: Floating heartbeat interval in seconds (min 60)
-        [JsonPropertyName("sessionLeaseDuration")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? SessionLeaseDuration { get; set; }  // Optional: Floating session lease duration in seconds (min 300)
         /// <summary>
         /// Returns true if the required fields are set.
@@ -102,11 +59,8 @@ namespace KeyMint.Services
     /// </summary>
     public class CreateKeyResponse
     {
-        [JsonPropertyName("code")]
         public required int Code { get; set; } // API response code (e.g., 0 for success)
-        [JsonPropertyName("key")]
         public string? Key { get; set; }  // The generated license key for single-key creation
-        [JsonPropertyName("keys")]
         public List<string>? Keys { get; set; } // Generated license keys for bulk creation
     }
 
@@ -115,13 +69,9 @@ namespace KeyMint.Services
     /// </summary>
     public class KeyMintApiError
     {
-        [JsonPropertyName("message")]
         public string Message { get; set; } = "Keymint API request failed"; // Descriptive error message
-        [JsonPropertyName("code")]
         public int Code { get; set; }    // API numeric error code
-        [JsonPropertyName("status")]
         public int? Status { get; set; }  // HTTP status code, optional
-        [JsonPropertyName("error")]
         public KeyMintApiErrorDetails? Error { get; set; }
     }
 
@@ -130,11 +80,8 @@ namespace KeyMint.Services
     /// </summary>
     public class KeyMintApiErrorDetails
     {
-        [JsonPropertyName("code")]
         public string? Code { get; set; }
-        [JsonPropertyName("message")]
         public string? Message { get; set; }
-        [JsonPropertyName("details")]
         public object? Details { get; set; }
     }
 
@@ -143,20 +90,11 @@ namespace KeyMint.Services
     /// </summary>
     public class ActivateKeyParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }  // Required: The unique identifier of the product.
-        [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; } // Required: The license key to activate.
-        [JsonPropertyName("hostId")]
         public string? HostId { get; set; }     // Optional: A unique identifier for the device.
-        [JsonPropertyName("deviceTag")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? DeviceTag { get; set; }  // Optional: A user-friendly name for the device.
-        [JsonPropertyName("licensee")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public ActivationLicensee? Licensee { get; set; } // Optional: Customer name+email to set during activation
-        [JsonPropertyName("version")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Version { get; set; }    // Optional: Product version string (max 32 chars)
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
@@ -167,9 +105,7 @@ namespace KeyMint.Services
     /// </summary>
     public class ActivationLicensee
     {
-        [JsonPropertyName("name")]
         public required string Name { get; set; }
-        [JsonPropertyName("email")]
         public required string Email { get; set; }
     }
 
@@ -178,22 +114,13 @@ namespace KeyMint.Services
     /// </summary>
     public class ActivateKeyResponse
     {
-        [JsonPropertyName("code")]
         public required int Code { get; set; }             // API response code (e.g., 0 for success)
-        [JsonPropertyName("message")]
         public required string Message { get; set; }          // Activation status message (e.g., "License valid")
-        [JsonPropertyName("licenseeName")]
         public string? LicenseeName { get; set; }    // Optional: Name of the licensee (updated field name)
-        [JsonPropertyName("licenseeEmail")]
         public string? LicenseeEmail { get; set; }   // Optional: Email of the licensee (updated field name)
-        [JsonPropertyName("allowedHosts")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? AllowedHosts { get; set; } // Optional: List of authorized machine IDs.
-        [JsonPropertyName("metadata")]
         public Dictionary<string, object>? Metadata { get; set; }
-        [JsonPropertyName("versionId")]
         public string? VersionId { get; set; }
-        [JsonPropertyName("version")]
         public ActivationVersion? Version { get; set; }
     }
 
@@ -202,7 +129,6 @@ namespace KeyMint.Services
     /// </summary>
     public class ActivationVersion
     {
-        [JsonPropertyName("version")]
         public required string Version { get; set; }
     }
 
@@ -211,12 +137,8 @@ namespace KeyMint.Services
     /// </summary>
     public class DeactivateKeyParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }  // Required: The unique identifier of the product.
-        [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; } // Required: The license key to deactivate.
-        [JsonPropertyName("hostId")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? HostId { get; set; }     // Optional: The unique identifier of the device to deactivate. If omitted, all devices are deactivated.
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
@@ -227,11 +149,8 @@ namespace KeyMint.Services
     /// </summary>
     public class DeactivateKeyResponse
     {
-        [JsonPropertyName("message")]
         public required string Message { get; set; } // Confirmation message (e.g., "Device deactivated")
-        [JsonPropertyName("code")]
         public required int Code { get; set; }    // API response code (e.g., 0 for success)
-        [JsonPropertyName("devicesRemoved")]
         public int? DevicesRemoved { get; set; }
     }
 
@@ -240,15 +159,9 @@ namespace KeyMint.Services
     /// </summary>
     public class DeviceDetails
     {
-        [JsonPropertyName("hostId")]
         public required string HostId { get; set; }           // Updated field name
-        [JsonPropertyName("deviceTag")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? DeviceTag { get; set; }       // Updated field name  
-        [JsonPropertyName("ipAddress")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? IpAddress { get; set; }       // Updated field name
-        [JsonPropertyName("activationTime")]
         public DateTime ActivationTime { get; set; }   // Changed from string to DateTime
     }
 
@@ -257,25 +170,14 @@ namespace KeyMint.Services
     /// </summary>
     public class LicenseDetails
     {
-        [JsonPropertyName("id")]
         public required string Id { get; set; }
-        [JsonPropertyName("key")]
         public required string Key { get; set; }
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }        // Updated field name
-        [JsonPropertyName("maxActivations")]
         public required int MaxActivations { get; set; }   // Updated field name
-        [JsonPropertyName("activations")]
         public required int Activations { get; set; }
-        [JsonPropertyName("devices")]
         public required List<DeviceDetails> Devices { get; set; }
-        [JsonPropertyName("activated")]
         public required bool Activated { get; set; }
-        [JsonPropertyName("expirationDate")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public DateTime? ExpirationDate { get; set; }  // Changed from string? to DateTime?
-        [JsonPropertyName("allowedHosts")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? AllowedHosts { get; set; } // Optional: List of authorized machine IDs.
     }
 
@@ -284,13 +186,9 @@ namespace KeyMint.Services
     /// </summary>
     public class CustomerDetails
     {
-        [JsonPropertyName("id")]
         public required string Id { get; set; }
-        [JsonPropertyName("name")]
         public string? Name { get; set; } // Optional
-        [JsonPropertyName("email")]
         public string? Email { get; set; } // Optional
-        [JsonPropertyName("active")]
         public required bool Active { get; set; }
     }
 
@@ -299,9 +197,7 @@ namespace KeyMint.Services
     /// </summary>
     public class GetKeyParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }  // Required: The unique identifier of the product.
-        [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; } // Required: The license key to retrieve.
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
@@ -312,17 +208,13 @@ namespace KeyMint.Services
     /// </summary>
     public class GetKeyResponse
     {
-        [JsonPropertyName("code")]
         public required int Code { get; set; } // API response code (e.g., 0 for success)
-        [JsonPropertyName("data")]
         public required GetKeyResponseData Data { get; set; }
     }
 
     public class GetKeyResponseData
     {
-        [JsonPropertyName("license")]
         public required LicenseDetails License { get; set; }
-        [JsonPropertyName("customer")]
         public CustomerDetails? Customer { get; set; } // Optional, customer data might not be present
     }
 
@@ -331,9 +223,7 @@ namespace KeyMint.Services
     /// </summary>
     public class BlockKeyParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }  // Required: The unique identifier of the product.
-        [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; } // Required: The license key to block.
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
@@ -344,9 +234,7 @@ namespace KeyMint.Services
     /// </summary>
     public class BlockKeyResponse
     {
-        [JsonPropertyName("message")]
         public required string Message { get; set; } // Confirmation message (e.g., "Key blocked")
-        [JsonPropertyName("code")]
         public required int Code { get; set; }    // API response code (e.g., 0 for success)
     }
 
@@ -355,9 +243,7 @@ namespace KeyMint.Services
     /// </summary>
     public class UnblockKeyParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }  // Required: The unique identifier of the product.
-        [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; } // Required: The license key to unblock.
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
@@ -368,9 +254,7 @@ namespace KeyMint.Services
     /// </summary>
     public class UnblockKeyResponse
     {
-        [JsonPropertyName("message")]
         public required string Message { get; set; } // Confirmation message (e.g., "Key unblocked")
-        [JsonPropertyName("code")]
         public required int Code { get; set; }    // API response code (e.g., 0 for success)
     }
 
@@ -379,9 +263,7 @@ namespace KeyMint.Services
     /// </summary>
     public class CreateCustomerParams
     {
-        [JsonPropertyName("name")]
         public required string Name { get; set; }     // Required: Customer name
-        [JsonPropertyName("email")]
         public required string Email { get; set; }    // Required: Customer email
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(Name) && !string.IsNullOrWhiteSpace(Email);
@@ -392,25 +274,17 @@ namespace KeyMint.Services
     /// </summary>
     public class CreateCustomerResponse
     {
-        [JsonPropertyName("action")]
         public required string Action { get; set; }   // Action performed (e.g., "createCustomer")
-        [JsonPropertyName("status")]
         public required bool Status { get; set; }  // Success status
-        [JsonPropertyName("message")]
         public required string Message { get; set; }  // Success message
-        [JsonPropertyName("data")]
         public required CustomerData Data { get; set; }
-        [JsonPropertyName("code")]
         public required int Code { get; set; }     // API response code (e.g., 0 for success)
     }
 
     public class CustomerData
     {
-        [JsonPropertyName("id")]
         public required string Id { get; set; }     // Customer ID
-        [JsonPropertyName("name")]
         public required string Name { get; set; }   // Customer name
-        [JsonPropertyName("email")]
         public required string Email { get; set; }  // Customer email
     }
 
@@ -419,19 +293,12 @@ namespace KeyMint.Services
     /// </summary>
     public class Customer
     {
-        [JsonPropertyName("id")]
         public required string Id { get; set; }
-        [JsonPropertyName("name")]
         public required string Name { get; set; }
-        [JsonPropertyName("email")]
         public required string Email { get; set; }
-        [JsonPropertyName("active")]
         public required bool Active { get; set; }
-        [JsonPropertyName("createdAt")]
         public DateTime CreatedAt { get; set; } // Changed from string to DateTime
-        [JsonPropertyName("updatedAt")]
         public DateTime UpdatedAt { get; set; } // Changed from string to DateTime
-        [JsonPropertyName("createdBy")]
         public string? CreatedBy { get; set; }
     }
 
@@ -440,13 +307,9 @@ namespace KeyMint.Services
     /// </summary>
     public class GetAllCustomersResponse
     {
-        [JsonPropertyName("action")]
         public required string Action { get; set; }     // Action performed (e.g., "getCustomers")
-        [JsonPropertyName("status")]
         public required bool Status { get; set; }    // Success status
-        [JsonPropertyName("data")]
         public required List<Customer> Data { get; set; }   // Array of customer objects
-        [JsonPropertyName("code")]
         public required int Code { get; set; }       // API response code (e.g., 0 for success)
     }
 
@@ -455,7 +318,6 @@ namespace KeyMint.Services
     /// </summary>
     public class GetCustomerWithKeysParams
     {
-        [JsonPropertyName("customerId")]
         public required string CustomerId { get; set; } // Required: The customer ID
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(CustomerId);
@@ -466,23 +328,13 @@ namespace KeyMint.Services
     /// </summary>
     public class CustomerLicenseKey
     {
-        [JsonPropertyName("id")]
         public required string Id { get; set; }
-        [JsonPropertyName("key")]
         public required string Key { get; set; }
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }
-        [JsonPropertyName("maxActivations")]
         public required int MaxActivations { get; set; }
-        [JsonPropertyName("activations")]
         public required int Activations { get; set; }
-        [JsonPropertyName("activated")]
         public required bool Activated { get; set; }
-        [JsonPropertyName("expirationDate")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public DateTime? ExpirationDate { get; set; } // Changed from string? to DateTime?
-        [JsonPropertyName("allowedHosts")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? AllowedHosts { get; set; } // Optional: List of authorized machine IDs.
     }
 
@@ -491,7 +343,6 @@ namespace KeyMint.Services
     /// </summary>
     public class GetCustomerWithKeysResponse
     {
-        [JsonPropertyName("data")]
         public List<CustomerLicenseKey>? Data { get; set; } // The actual response is a flat LicenseKey[]
     }
 
@@ -500,13 +351,8 @@ namespace KeyMint.Services
     /// </summary>
     public class UpdateCustomerParams
     {
-        [JsonPropertyName("customerId")]
         public required string CustomerId { get; set; }  // Required: The customer ID
-        [JsonPropertyName("name")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Name { get; set; }       // Optional: Updated customer name
-        [JsonPropertyName("email")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Email { get; set; }      // Optional: Updated customer email
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(CustomerId);
@@ -517,15 +363,10 @@ namespace KeyMint.Services
     /// </summary>
     public class UpdateCustomerResponse
     {
-        [JsonPropertyName("action")]
         public required string Action { get; set; }
-        [JsonPropertyName("status")]
         public required bool Status { get; set; }
-        [JsonPropertyName("message")]
         public string? Message { get; set; }
-        [JsonPropertyName("data")]
         public Customer? Data { get; set; }
-        [JsonPropertyName("code")]
         public required int Code { get; set; }
     }
 
@@ -534,7 +375,6 @@ namespace KeyMint.Services
     /// </summary>
     public class ToggleCustomerStatusParams
     {
-        [JsonPropertyName("customerId")]
         public required string CustomerId { get; set; }  // Required: The customer ID
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(CustomerId);
@@ -545,17 +385,11 @@ namespace KeyMint.Services
     /// </summary>
     public class ToggleCustomerStatusResponse
     {
-        [JsonPropertyName("action")]
         public string? Action { get; set; }
-        [JsonPropertyName("status")]
         public required bool Status { get; set; }     // Success status
-        [JsonPropertyName("message")]
         public string? Message { get; set; }
-        [JsonPropertyName("code")]
         public int? Code { get; set; }
-        [JsonPropertyName("customerName")]
         public string? CustomerName { get; set; }
-        [JsonPropertyName("active")]
         public bool? Active { get; set; }
     }
 
@@ -564,7 +398,6 @@ namespace KeyMint.Services
     /// </summary>
     public class GetCustomerByIdParams
     {
-        [JsonPropertyName("customerId")]
         public required string CustomerId { get; set; }  // Required: The customer ID
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(CustomerId);
@@ -575,13 +408,9 @@ namespace KeyMint.Services
     /// </summary>
     public class GetCustomerByIdResponse
     {
-        [JsonPropertyName("action")]
         public required string Action { get; set; }      // Action performed (e.g., "getCustomerById")
-        [JsonPropertyName("status")]
         public required bool Status { get; set; }     // Success status
-        [JsonPropertyName("data")]
         public required List<Customer> Data { get; set; }    // Array containing the customer object
-        [JsonPropertyName("code")]
         public required int Code { get; set; }        // API response code
     }
 
@@ -590,7 +419,6 @@ namespace KeyMint.Services
     /// </summary>
     public class DeleteCustomerParams
     {
-        [JsonPropertyName("customerId")]
         public required string CustomerId { get; set; }  // Required: The customer ID
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(CustomerId);
@@ -601,13 +429,9 @@ namespace KeyMint.Services
     /// </summary>
     public class DeleteCustomerResponse
     {
-        [JsonPropertyName("action")]
         public required string Action { get; set; }      // Action performed (e.g., "deleteCustomer")
-        [JsonPropertyName("status")]
         public required bool Status { get; set; }     // Success status
-        [JsonPropertyName("message")]
         public string? Message { get; set; } // Optional, API may omit
-        [JsonPropertyName("code")]
         public required int Code { get; set; }        // API response code
     }
 
@@ -632,23 +456,12 @@ namespace KeyMint.Services
     /// </summary>
     public class FloatingCheckoutParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }
-        [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; }
-        [JsonPropertyName("hostId")]
         public required string HostId { get; set; }
-        [JsonPropertyName("deviceTag")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? DeviceTag { get; set; }
-        [JsonPropertyName("userIdentifier")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? UserIdentifier { get; set; }
-        [JsonPropertyName("timestamp")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public object? Timestamp { get; set; }
-        [JsonPropertyName("signature")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Signature { get; set; }
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey) && !string.IsNullOrWhiteSpace(HostId);
@@ -659,29 +472,17 @@ namespace KeyMint.Services
     /// </summary>
     public class FloatingCheckoutResponse
     {
-        [JsonPropertyName("code")]
         public required int Code { get; set; }
-        [JsonPropertyName("message")]
         public required string Message { get; set; }
-        [JsonPropertyName("sessionId")]
         public required string SessionId { get; set; }
-        [JsonPropertyName("sessionSecret")]
         public required string SessionSecret { get; set; }
-        [JsonPropertyName("nextNonce")]
         public required string NextNonce { get; set; }
-        [JsonPropertyName("expiresAt")]
         public required string ExpiresAt { get; set; }
-        [JsonPropertyName("heartbeatInterval")]
         public required int HeartbeatInterval { get; set; }
-        [JsonPropertyName("metadata")]
         public Dictionary<string, object>? Metadata { get; set; }
-        [JsonPropertyName("currentSessions")]
         public int? CurrentSessions { get; set; }
-        [JsonPropertyName("maxSessions")]
         public int? MaxSessions { get; set; }
-        [JsonPropertyName("licenseeName")]
         public string? LicenseeName { get; set; }
-        [JsonPropertyName("licenseeEmail")]
         public string? LicenseeEmail { get; set; }
     }
 
@@ -690,15 +491,10 @@ namespace KeyMint.Services
     /// </summary>
     public class FloatingHeartbeatParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }
-        [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; }
-        [JsonPropertyName("sessionId")]
         public required string SessionId { get; set; }
-        [JsonPropertyName("timestamp")]
         public required object Timestamp { get; set; } // holds the rotating nonce string
-        [JsonPropertyName("signature")]
         public required string Signature { get; set; }
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey) && !string.IsNullOrWhiteSpace(SessionId) && Timestamp != null && !string.IsNullOrWhiteSpace(Signature);
@@ -709,13 +505,9 @@ namespace KeyMint.Services
     /// </summary>
     public class FloatingHeartbeatResponse
     {
-        [JsonPropertyName("code")]
         public required int Code { get; set; }
-        [JsonPropertyName("message")]
         public required string Message { get; set; }
-        [JsonPropertyName("expiresAt")]
         public required string ExpiresAt { get; set; }
-        [JsonPropertyName("nextNonce")]
         public required string NextNonce { get; set; }
     }
 
@@ -724,15 +516,10 @@ namespace KeyMint.Services
     /// </summary>
     public class FloatingCheckinParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }
-        [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; }
-        [JsonPropertyName("sessionId")]
         public required string SessionId { get; set; }
-        [JsonPropertyName("timestamp")]
         public required object Timestamp { get; set; } // holds the rotating nonce string
-        [JsonPropertyName("signature")]
         public required string Signature { get; set; }
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey) && !string.IsNullOrWhiteSpace(SessionId) && Timestamp != null && !string.IsNullOrWhiteSpace(Signature);
@@ -743,9 +530,7 @@ namespace KeyMint.Services
     /// </summary>
     public class FloatingCheckinResponse
     {
-        [JsonPropertyName("code")]
         public required int Code { get; set; }
-        [JsonPropertyName("message")]
         public required string Message { get; set; }
     }
 
@@ -762,42 +547,18 @@ namespace KeyMint.Services
     /// </summary>
     public class UpdateKeyParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }
-        [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; }
-        [JsonPropertyName("maxActivations")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public object? MaxActivations { get; set; } // string or number
-        [JsonPropertyName("expiryDate")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? ExpiryDate { get; set; }
-        [JsonPropertyName("customerId")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? CustomerId { get; set; }
-        [JsonPropertyName("newCustomer")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public NewCustomer? NewCustomer { get; set; }
-        [JsonPropertyName("metadata")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, object>? Metadata { get; set; }
-        [JsonPropertyName("versionId")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? VersionId { get; set; }
-        [JsonPropertyName("allowedHosts")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? AllowedHosts { get; set; }
-        [JsonPropertyName("licenseType")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? LicenseType { get; set; }
-        [JsonPropertyName("maxConcurrentSessions")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? MaxConcurrentSessions { get; set; }
-        [JsonPropertyName("heartbeatInterval")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? HeartbeatInterval { get; set; }
-        [JsonPropertyName("sessionLeaseDuration")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? SessionLeaseDuration { get; set; }
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
@@ -808,11 +569,8 @@ namespace KeyMint.Services
     /// </summary>
     public class UpdateKeyResponse
     {
-        [JsonPropertyName("code")]
         public required int Code { get; set; }
-        [JsonPropertyName("message")]
         public required string Message { get; set; }
-        [JsonPropertyName("affectedCount")]
         public int? AffectedCount { get; set; }
     }
 
@@ -821,14 +579,9 @@ namespace KeyMint.Services
     /// </summary>
     public class SignKeyParams
     {
-        [JsonPropertyName("productId")]
         public required string ProductId { get; set; }
-        [JsonPropertyName("licenseKey")]
         public required string LicenseKey { get; set; }
-        [JsonPropertyName("hostId")]
         public required string HostId { get; set; }
-        [JsonPropertyName("ttl")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? Ttl { get; set; }
 
         public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey) && !string.IsNullOrWhiteSpace(HostId);
@@ -839,7 +592,6 @@ namespace KeyMint.Services
     /// </summary>
     public class SignKeyResponse
     {
-        [JsonPropertyName("file")]
         public required string File { get; set; }
     }
 }
