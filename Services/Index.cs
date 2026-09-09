@@ -462,7 +462,45 @@ public class KeyMintSDK
         {
             { "customerId", parameters.CustomerId }
         };
-        return await HandleGetRequest<GetCustomerWithKeysResponse>("/customer/keys", queryParams, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var queryString = ToQueryString(queryParams);
+            var response = await _httpClient.GetAsync($"/customer/keys?{queryString}", cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return await HandleResponse<GetCustomerWithKeysResponse>(response).ConfigureAwait(false);
+            }
+
+            var raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            // Server returns a raw JSON array for this endpoint.
+            try
+            {
+                var list = System.Text.Json.JsonSerializer.Deserialize<List<CustomerLicenseKey>>(raw, options);
+                if (list != null)
+                {
+                    return KeyMintResult<GetCustomerWithKeysResponse>.Success(new GetCustomerWithKeysResponse { Data = list });
+                }
+            }
+            catch
+            {
+                // Fall through to envelope shape below.
+            }
+
+            var envelope = System.Text.Json.JsonSerializer.Deserialize<GetCustomerWithKeysResponse>(raw, options);
+            if (envelope != null)
+            {
+                envelope.Data ??= new List<CustomerLicenseKey>();
+                return KeyMintResult<GetCustomerWithKeysResponse>.Success(envelope);
+            }
+
+            return KeyMintResult<GetCustomerWithKeysResponse>.Failure(new KeyMintApiError { Message = $"Deserialization error: unexpected customer keys payload: {raw}", Code = -1, Status = (int)response.StatusCode });
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error in GET /customer/keys");
+            return KeyMintResult<GetCustomerWithKeysResponse>.Failure(new KeyMintApiError { Message = ex.Message, Code = -1 });
+        }
     }
 
     /// <summary>
