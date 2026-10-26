@@ -141,6 +141,22 @@ public class LiveApiTests
             Assert.Contains("signedKey", signed.File, StringComparison.Ordinal);
             Assert.Contains("keyId", signed.File, StringComparison.Ordinal);
 
+            // Verify the real file locally when the test org's public key is configured.
+            var publicKeyPem = Environment.GetEnvironmentVariable("KEYMINT_TEST_PUBLIC_KEY");
+            if (!string.IsNullOrWhiteSpace(publicKeyPem))
+            {
+                var offline = OfflineLicenseVerifier.Verify(signed.File, new OfflineVerifyOptions
+                {
+                    PublicKeys = new[] { publicKeyPem.Replace("\\n", "\n") },
+                    ProductId = productId,
+                    MachineCode = nodeHostId
+                });
+                Assert.Equal(nodeKey, offline.LicenseKey);
+                Assert.Equal(productId, offline.ProductId);
+                Assert.Equal(nodeHostId, offline.MachineCode);
+                Assert.True(offline.ExpiresAt > DateTimeOffset.UtcNow);
+            }
+
             var customerEmail = $"ci-{runId}@example.com";
             var createdCustomer = await RequireSuccessAsync(() => admin.CreateCustomer(new CreateCustomerParams
             {
