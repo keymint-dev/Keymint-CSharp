@@ -206,6 +206,22 @@ public class LiveApiTests
             }));
             Assert.True(deletedCustomer.Status);
             customerId = null;
+
+            var deletedKey = await RequireSuccessAsync(() => admin.DeleteKey(new DeleteKeyParams
+            {
+                ProductId = productId,
+                LicenseKey = nodeKey
+            }));
+            Assert.Equal(0, deletedKey.Code);
+            var deletedNodeKey = nodeKey;
+            nodeKey = null;
+
+            var lookupAfterDelete = await RetryWhileRateLimitedAsync(() => readOnly.GetKey(new GetKeyParams
+            {
+                ProductId = productId,
+                LicenseKey = deletedNodeKey
+            }));
+            Assert.False(lookupAfterDelete.IsSuccess, "GetKey should fail for a deleted license key");
         }
         finally
         {
@@ -213,11 +229,7 @@ public class LiveApiTests
             {
                 try
                 {
-                    await admin.BlockKey(new BlockKeyParams
-                    {
-                        ProductId = productId,
-                        LicenseKey = nodeKey
-                    });
+                    await DeleteOrBlockKeyAsync(admin, productId, nodeKey);
                 }
                 catch
                 {
@@ -229,11 +241,7 @@ public class LiveApiTests
             {
                 try
                 {
-                    await admin.BlockKey(new BlockKeyParams
-                    {
-                        ProductId = productId,
-                        LicenseKey = floatingKey
-                    });
+                    await DeleteOrBlockKeyAsync(admin, productId, floatingKey);
                 }
                 catch
                 {
@@ -256,6 +264,41 @@ public class LiveApiTests
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Best-effort cleanup: permanently delete a key created by the test so the shared
+    /// test workspace doesn't fill up; block it if the delete doesn't go through.
+    /// </summary>
+    private static async Task DeleteOrBlockKeyAsync(KeyMintSDK admin, string productId, string licenseKey)
+    {
+        var deleted = await RetryWhileRateLimitedAsync(() => admin.DeleteKey(new DeleteKeyParams
+        {
+            ProductId = productId,
+            LicenseKey = licenseKey
+        })).ConfigureAwait(false);
+        if (deleted.IsSuccess)
+        {
+            return;
+        }
+
+        await admin.BlockKey(new BlockKeyParams
+        {
+            ProductId = productId,
+            LicenseKey = licenseKey
+        }).ConfigureAwait(false);
+    }
+
+    private static async Task<KeyMintResult<T>> RetryWhileRateLimitedAsync<T>(Func<Task<KeyMintResult<T>>> action, int maxAttempts = 4)
+    {
+        KeyMintResult<T> result = await action().ConfigureAwait(false);
+        for (var attempt = 2; attempt <= maxAttempts && IsRateLimited(result); attempt++)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+            result = await action().ConfigureAwait(false);
+        }
+
+        return result;
     }
 
     private static bool IsRateLimited<T>(KeyMintResult<T> result)

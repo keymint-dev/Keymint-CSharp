@@ -4,6 +4,7 @@
 
 ### Added
 
+- `DeleteKey`: permanently deletes a license key (`DELETE /key`). Use `BlockKey` to stop a key reversibly.
 - `OfflineLicenseVerifier.Verify` and `TryVerify`: verify an offline license (`.lic` file from `SignKey` or the dashboard, or the bare token) locally against your public key PEMs, with no network call. `ProductId` and `MachineCode` are required and compared exactly, so a license for one product can't unlock another (one signing key covers every product in an organization). Returns `OfflineLicense`; failures throw `OfflineLicenseException` with an `OfflineLicenseErrorCode` (`CodeString` gives the shared snake_case code). Follows the shared Keymint offline-verifier spec and passes its 34 test vectors.
 
 ### Dependencies

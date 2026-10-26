@@ -358,6 +358,30 @@ namespace KeyMint.Services
     }
 
     /// <summary>
+    /// Parameters for the deleteKey API endpoint.
+    /// </summary>
+    public class DeleteKeyParams
+    {
+        [JsonPropertyName("productId")]
+        public required string ProductId { get; set; }  // Required: The unique identifier of the product.
+        [JsonPropertyName("licenseKey")]
+        public required string LicenseKey { get; set; } // Required: The license key to permanently delete.
+
+        public bool IsValid() => !string.IsNullOrWhiteSpace(ProductId) && !string.IsNullOrWhiteSpace(LicenseKey);
+    }
+
+    /// <summary>
+    /// Response structure for a successful deleteKey API call.
+    /// </summary>
+    public class DeleteKeyResponse
+    {
+        [JsonPropertyName("message")]
+        public required string Message { get; set; } // Confirmation message (e.g., "Key deleted")
+        [JsonPropertyName("code")]
+        public required int Code { get; set; }    // API response code (e.g., 0 for success)
+    }
+
+    /// <summary>
     /// Parameters for the unblockKey API endpoint.
     /// </summary>
     public class UnblockKeyParams

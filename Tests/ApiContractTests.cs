@@ -68,6 +68,85 @@ public class ApiContractTests
     }
 
     [Fact]
+    public async Task DeleteKey_sends_DELETE_with_license_in_json_body_instead_of_url()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        string? requestBody = null;
+        var handler = new StubHandler(request =>
+        {
+            capturedRequest = request;
+            requestBody = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+            return JsonResponse(new { message = "Key deleted", code = 0 });
+        });
+        var sdk = CreateSdk(handler);
+
+        var result = await sdk.DeleteKey(new DeleteKeyParams
+        {
+            ProductId = "product_123",
+            LicenseKey = "secret/license+key"
+        });
+
+        Assert.True(result.IsSuccess, result.Error?.Message);
+        Assert.Equal("Key deleted", result.Data!.Message);
+        Assert.Equal(0, result.Data.Code);
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal(HttpMethod.Delete, capturedRequest!.Method);
+        Assert.Equal("/key", capturedRequest.RequestUri!.AbsolutePath);
+        Assert.Equal(string.Empty, capturedRequest.RequestUri.Query);
+        Assert.DoesNotContain("secret", capturedRequest.RequestUri.ToString());
+        Assert.False(capturedRequest.Headers.Contains("x-license-key"));
+        Assert.Equal("Bearer", capturedRequest.Headers.Authorization?.Scheme);
+        Assert.Equal("admin_test", capturedRequest.Headers.Authorization?.Parameter);
+        Assert.Equal("application/json", capturedRequest.Content!.Headers.ContentType?.MediaType);
+
+        using var body = JsonDocument.Parse(requestBody!);
+        Assert.Equal("product_123", body.RootElement.GetProperty("productId").GetString());
+        Assert.Equal("secret/license+key", body.RootElement.GetProperty("licenseKey").GetString());
+    }
+
+    [Fact]
+    public async Task DeleteKey_returns_api_error_for_unknown_key()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)
+        {
+            Content = new StringContent(
+                "{\"message\":\"Invalid license key\",\"code\":1}",
+                Encoding.UTF8,
+                "application/json")
+        });
+        var sdk = CreateSdk(handler);
+
+        var result = await sdk.DeleteKey(new DeleteKeyParams
+        {
+            ProductId = "product_123",
+            LicenseKey = "missing_key"
+        });
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Data);
+        Assert.Equal("Invalid license key", result.Error!.Message);
+        Assert.Equal(1, result.Error.Code);
+        Assert.Equal(404, result.Error.Status);
+    }
+
+    [Fact]
+    public async Task DeleteKey_rejects_missing_parameters_without_a_request()
+    {
+        var called = false;
+        var sdk = CreateSdk(new StubHandler(_ =>
+        {
+            called = true;
+            return JsonResponse(new { message = "Key deleted", code = 0 });
+        }));
+
+        var result = await sdk.DeleteKey(new DeleteKeyParams { ProductId = "product_123", LicenseKey = " " });
+
+        Assert.False(result.IsSuccess);
+        Assert.False(called);
+    }
+
+    [Fact]
     public async Task ActivateKey_deserializes_metadata_and_version_fields()
     {
         var handler = new StubHandler(_ => JsonResponse(new

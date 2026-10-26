@@ -130,6 +130,31 @@ public class KeyMintSDK
     }
 
     /// <summary>
+    /// Generic method to handle DELETE requests with a JSON body
+    /// </summary>
+    private async Task<KeyMintResult<T>> HandleDeleteRequestWithBody<T>(string endpoint, object parameters, RequestOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Delete, endpoint)
+            {
+                Content = JsonContent.Create(parameters)
+            };
+            if (options?.IdempotencyKey != null)
+            {
+                request.Headers.Add("Idempotency-Key", options.IdempotencyKey);
+            }
+            var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            return await HandleResponse<T>(response).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error in DELETE {Endpoint}", endpoint);
+            return KeyMintResult<T>.Failure(new KeyMintApiError { Message = ex.Message, Code = -1 });
+        }
+    }
+
+    /// <summary>
     /// Generic method to handle PUT requests
     /// </summary>
     private async Task<KeyMintResult<T>> HandlePutRequest<T>(string endpoint, object parameters, RequestOptions? options = null, CancellationToken cancellationToken = default)
@@ -387,6 +412,20 @@ public class KeyMintSDK
         if (parameters == null || !parameters.IsValid())
             return KeyMintResult<BlockKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid BlockKeyParams", Code = -1 });
         return await HandleRequest<BlockKeyResponse>("/key/block", parameters, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Permanently deletes a license key. Use BlockKey to stop a key reversibly.
+    /// </summary>
+    /// <param name="parameters">The parameters for deleting the key.</param>
+    /// <param name="options">Optional request configurations (e.g. idempotency keys).</param>
+    /// <returns>The delete response.</returns>
+    /// <exception cref="KeyMintApiException">Thrown if the API returns an error.</exception>
+    public async Task<KeyMintResult<DeleteKeyResponse>> DeleteKey(DeleteKeyParams parameters, RequestOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        if (parameters == null || !parameters.IsValid())
+            return KeyMintResult<DeleteKeyResponse>.Failure(new KeyMintApiError { Message = "Invalid DeleteKeyParams", Code = -1 });
+        return await HandleDeleteRequestWithBody<DeleteKeyResponse>("/key", parameters, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

@@ -171,6 +171,7 @@ Keymint provides utilities to uniquely identify machines for node-locking:
 | `GetKey`        | Retrieves detailed information about a key.     |
 | `BlockKey`      | Blocks a license key.                           |
 | `UnblockKey`    | Unblocks a previously blocked license key.      |
+| `DeleteKey`     | Permanently deletes a license key.              |
 | `UpdateKey`     | Updates an existing license key.                |
 | `SignKey`       | Signs a key for offline (air-gapped) validation using an admin API key.|
 | `OfflineLicenseVerifier.Verify` | Verifies a signed `.lic` file locally, with no network call. See [Offline Licenses](#offline-licenses). |
