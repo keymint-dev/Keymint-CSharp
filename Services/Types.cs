@@ -195,6 +195,13 @@ namespace KeyMint.Services
         public string? VersionId { get; set; }
         [JsonPropertyName("version")]
         public ActivationVersion? Version { get; set; }
+        /// <summary>
+        /// When the license expires (UTC), or <c>null</c> if it never expires.
+        /// An expired license fails activation with the generic invalid-key error,
+        /// so store the last value you received to tell the user when it expired.
+        /// </summary>
+        [JsonPropertyName("expirationDate")]
+        public DateTimeOffset? ExpirationDate { get; set; }
     }
 
     /// <summary>
@@ -675,6 +682,12 @@ namespace KeyMint.Services
         public required int HeartbeatInterval { get; set; }
         [JsonPropertyName("metadata")]
         public Dictionary<string, object>? Metadata { get; set; }
+        /// <summary>
+        /// When the license expires (UTC), or <c>null</c> if it never expires.
+        /// Not the same as <see cref="ExpiresAt"/>, which is the floating seat lease.
+        /// </summary>
+        [JsonPropertyName("expirationDate")]
+        public DateTimeOffset? ExpirationDate { get; set; }
         [JsonPropertyName("currentSessions")]
         public int? CurrentSessions { get; set; }
         [JsonPropertyName("maxSessions")]

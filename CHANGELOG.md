@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `ActivateKeyResponse.ExpirationDate` and `FloatingCheckoutResponse.ExpirationDate` (`DateTimeOffset?`): the license expiry returned by `POST /key/activate` and `POST /key/checkout`, or `null` when the license never expires. On checkout this is separate from `ExpiresAt`, the floating seat lease.
+
 ## 1.5.0 - 2026-09-09
 
 ### Fixed

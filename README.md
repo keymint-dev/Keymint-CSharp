@@ -41,6 +41,31 @@ if (result.IsSuccess) {
 }
 ```
 
+## License Expiry
+
+`ActivateKey` and `FloatingCheckout` return `ExpirationDate`: when the license expires, as a UTC `DateTimeOffset?`, or `null` if it never expires. On `FloatingCheckout` this is separate from `ExpiresAt`, which is the floating seat lease.
+
+```csharp
+var activation = await client.ActivateKey(new ActivateKeyParams {
+    ProductId = productId,
+    LicenseKey = licenseKey,
+    HostId = hostId
+});
+
+if (activation.IsSuccess) {
+    var expiry = activation.Data.ExpirationDate;
+    if (expiry is null) {
+        Console.WriteLine("License never expires.");
+    } else {
+        var daysLeft = Math.Max(0, (int)Math.Ceiling((expiry.Value - DateTimeOffset.UtcNow).TotalDays));
+        Console.WriteLine($"License expires {expiry.Value:yyyy-MM-dd} ({daysLeft} days left).");
+    }
+    // Persist the last value you received (e.g. in your app settings).
+}
+```
+
+Store the last `ExpirationDate` you received. An expired license fails activation with the same generic error as an invalid key, so the stored date is what lets your app tell the user the license expired on that date instead of calling the key invalid.
+
 ## Machine Identity
 Keymint provides utilities to uniquely identify machines for node-locking:
 

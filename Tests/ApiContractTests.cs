@@ -93,6 +93,85 @@ public class ApiContractTests
     }
 
     [Fact]
+    public async Task ActivateKey_deserializes_expiration_date()
+    {
+        var handler = new StubHandler(_ => RawJsonResponse(
+            "{\"code\":0,\"message\":\"License valid\",\"expirationDate\":\"2027-03-01T00:00:00.000Z\"}"));
+        var sdk = CreateSdk(handler);
+
+        var result = await sdk.ActivateKey(new ActivateKeyParams
+        {
+            ProductId = "product_123",
+            LicenseKey = "license_123"
+        });
+
+        Assert.True(result.IsSuccess, result.Error?.Message);
+        Assert.Equal(new DateTimeOffset(2027, 3, 1, 0, 0, 0, TimeSpan.Zero), result.Data!.ExpirationDate);
+        Assert.Equal(TimeSpan.Zero, result.Data.ExpirationDate!.Value.Offset);
+    }
+
+    [Theory]
+    [InlineData("{\"code\":0,\"message\":\"License valid\",\"expirationDate\":null}")]
+    [InlineData("{\"code\":0,\"message\":\"License valid\"}")]
+    public async Task ActivateKey_treats_null_or_missing_expiration_date_as_never_expires(string json)
+    {
+        var sdk = CreateSdk(new StubHandler(_ => RawJsonResponse(json)));
+
+        var result = await sdk.ActivateKey(new ActivateKeyParams
+        {
+            ProductId = "product_123",
+            LicenseKey = "license_123"
+        });
+
+        Assert.True(result.IsSuccess, result.Error?.Message);
+        Assert.Null(result.Data!.ExpirationDate);
+    }
+
+    [Theory]
+    [InlineData("\"2027-03-01T00:00:00.000Z\"", true)]
+    [InlineData("null", false)]
+    public async Task FloatingCheckout_deserializes_license_expiration_separately_from_seat_lease(string expirationJson, bool hasExpiry)
+    {
+        var json = "{\"code\":0,\"message\":\"Seat checked out\",\"sessionId\":\"session_123\"," +
+                   "\"sessionSecret\":\"secret_123\",\"nextNonce\":\"nonce_1\",\"expiresAt\":\"2026-09-08T01:00:00Z\"," +
+                   "\"heartbeatInterval\":60,\"expirationDate\":" + expirationJson + "}";
+        var sdk = CreateSdk(new StubHandler(_ => RawJsonResponse(json)));
+
+        var result = await sdk.FloatingCheckout(new FloatingCheckoutParams
+        {
+            ProductId = "product_123",
+            LicenseKey = "license_123",
+            HostId = "host_123"
+        });
+
+        Assert.True(result.IsSuccess, result.Error?.Message);
+        Assert.Equal("2026-09-08T01:00:00Z", result.Data!.ExpiresAt);
+        if (hasExpiry)
+        {
+            Assert.Equal(new DateTimeOffset(2027, 3, 1, 0, 0, 0, TimeSpan.Zero), result.Data.ExpirationDate);
+        }
+        else
+        {
+            Assert.Null(result.Data.ExpirationDate);
+        }
+    }
+
+    [Fact]
+    public void ExpirationDate_round_trips_through_System_Text_Json()
+    {
+        var original = new ActivateKeyResponse
+        {
+            Code = 0,
+            Message = "License valid",
+            ExpirationDate = new DateTimeOffset(2027, 3, 1, 0, 0, 0, TimeSpan.Zero)
+        };
+
+        var roundTripped = JsonSerializer.Deserialize<ActivateKeyResponse>(JsonSerializer.Serialize(original));
+
+        Assert.Equal(original.ExpirationDate, roundTripped!.ExpirationDate);
+    }
+
+    [Fact]
     public async Task CreateKey_deserializes_bulk_keys()
     {
         var handler = new StubHandler(_ => JsonResponse(new
@@ -181,6 +260,14 @@ public class ApiContractTests
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent(JsonSerializer.Serialize(value), Encoding.UTF8, "application/json")
+        };
+    }
+
+    private static HttpResponseMessage RawJsonResponse(string json)
+    {
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
     }
 
