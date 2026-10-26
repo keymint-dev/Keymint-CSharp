@@ -35,6 +35,7 @@ Thumbs.db
 # MSBuild files
 *.cache
 *.json
+!Tests/fixtures/*.json
 *.g.props
 *.g.targets
 *.dgspec.json

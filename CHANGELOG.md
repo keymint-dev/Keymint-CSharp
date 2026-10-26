@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `OfflineLicenseVerifier.Verify` and `TryVerify`: verify an offline license (`.lic` file from `SignKey` or the dashboard, or the bare token) locally against your public key PEMs, with no network call. `ProductId` and `MachineCode` are required and compared exactly, so a license for one product can't unlock another (one signing key covers every product in an organization). Returns `OfflineLicense`; failures throw `OfflineLicenseException` with an `OfflineLicenseErrorCode` (`CodeString` gives the shared snake_case code). Follows the shared Keymint offline-verifier spec and passes its 34 test vectors.
+
+### Dependencies
+
+- New dependency: `BouncyCastle.Cryptography` 2.7.0 (MIT, managed, about 6 MB) for Ed25519, which .NET 8 and 9 don't provide. An app that still references the old `Portable.BouncyCastle` package and uses its types directly may get ambiguous-type compile errors, since both packages define the `Org.BouncyCastle` namespaces; move to `BouncyCastle.Cryptography`.
+
 ## 1.6.0 - 2026-10-26
 
 ### Added
