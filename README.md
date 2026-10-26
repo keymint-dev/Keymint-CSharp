@@ -189,7 +189,7 @@ Keymint provides utilities to uniquely identify machines for node-locking:
 | `GetCustomerWithKeys` | Gets a customer along with their license keys.   |
 | `UpdateCustomer`      | Updates an existing customer's information.      |
 | `ToggleCustomerStatus`| Toggles a customer's active status.              |
-| `DeleteCustomer`      | Permanently deletes a customer and their keys.   |
+| `DeleteCustomer`      | Deletes a customer. Their license keys are kept; use `DeleteKey` to remove them. |
 
 ### Webhook Verification
 
