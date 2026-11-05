@@ -2,6 +2,7 @@ namespace KeyMint.Services
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
     using System.Text.Json.Serialization;
 
     /// <summary>
@@ -122,7 +123,8 @@ namespace KeyMint.Services
         [JsonPropertyName("status")]
         public int? Status { get; set; }  // HTTP status code, optional
         [JsonPropertyName("error")]
-        public KeyMintApiErrorDetails? Error { get; set; }
+        [JsonConverter(typeof(KeyMintApiErrorDetailsConverter))]
+        public KeyMintApiErrorDetails? Error { get; set; } // Object envelope, or a plain string kept in Message
     }
 
     /// <summary>
@@ -136,6 +138,41 @@ namespace KeyMint.Services
         public string? Message { get; set; }
         [JsonPropertyName("details")]
         public object? Details { get; set; }
+    }
+
+    /// <summary>
+    /// Reads the API's <c>error</c> field, which is either an object
+    /// (<c>{ code, message, details }</c>) or a plain string (e.g. "Method not allowed").
+    /// A string is kept as <see cref="KeyMintApiErrorDetails.Message"/>.
+    /// </summary>
+    public class KeyMintApiErrorDetailsConverter : JsonConverter<KeyMintApiErrorDetails?>
+    {
+        public override bool HandleNull => true;
+
+        public override KeyMintApiErrorDetails? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.Null:
+                    return null;
+                case JsonTokenType.String:
+                    return new KeyMintApiErrorDetails { Message = reader.GetString() };
+                case JsonTokenType.StartObject:
+                    return JsonSerializer.Deserialize<KeyMintApiErrorDetails>(ref reader, options);
+                default:
+                    throw new JsonException($"Unexpected token {reader.TokenType} for the API error field.");
+            }
+        }
+
+        public override void Write(Utf8JsonWriter writer, KeyMintApiErrorDetails? value, JsonSerializerOptions options)
+        {
+            if (value == null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+            JsonSerializer.Serialize(writer, value, options);
+        }
     }
 
     /// <summary>
