@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `KeyMintApiError.Error` now deserialises when the API sends `error` as a plain string (for example the 405 "Method not allowed" and the IP-allowlist 403) as well as an object. A string is kept in `Error.Message`; before, these responses failed to parse and returned a generic `HTTP error: ...` with `Code = -1`.
+
 ## 1.7.0 - 2026-10-26
 
 ### Added

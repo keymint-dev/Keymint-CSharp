@@ -326,6 +326,53 @@ public class ApiContractTests
         Assert.Equal(409, result.Error.Status);
     }
 
+    [Fact]
+    public async Task Api_errors_accept_a_string_error_field()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Forbidden)
+        {
+            Content = new StringContent(
+                "{\"error\":\"This API key is not allowed from this IP address\",\"message\":\"This API key is not allowed from this IP address\",\"code\":1}",
+                Encoding.UTF8,
+                "application/json")
+        });
+        var sdk = CreateSdk(handler);
+
+        var result = await sdk.ActivateKey(new ActivateKeyParams { ProductId = "product_123", LicenseKey = "key_123" });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("This API key is not allowed from this IP address", result.Error!.Message);
+        Assert.Equal(1, result.Error.Code);
+        Assert.Equal(403, result.Error.Status);
+        Assert.Equal("This API key is not allowed from this IP address", result.Error.Error!.Message);
+        Assert.Null(result.Error.Error.Code);
+    }
+
+    [Theory]
+    [InlineData("{\"message\":\"Method not allowed\",\"code\":1,\"error\":\"Method not allowed\"}", null, "Method not allowed")]
+    [InlineData("{\"message\":\"Too many requests\",\"code\":1,\"error\":{\"code\":\"RATE_LIMIT_EXCEEDED\",\"message\":\"Too many requests\"}}", "RATE_LIMIT_EXCEEDED", "Too many requests")]
+    public void Api_error_field_deserializes_from_string_or_object(string json, string? expectedCode, string expectedMessage)
+    {
+        var error = JsonSerializer.Deserialize<KeyMintApiError>(json)!;
+
+        Assert.Equal(1, error.Code);
+        Assert.NotNull(error.Error);
+        Assert.Equal(expectedCode, error.Error!.Code);
+        Assert.Equal(expectedMessage, error.Error.Message);
+    }
+
+    [Theory]
+    [InlineData("{\"message\":\"Invalid license key\",\"code\":1}")]
+    [InlineData("{\"message\":\"Invalid license key\",\"code\":1,\"error\":null}")]
+    public void Api_error_without_error_field_deserializes(string json)
+    {
+        var error = JsonSerializer.Deserialize<KeyMintApiError>(json)!;
+
+        Assert.Equal("Invalid license key", error.Message);
+        Assert.Equal(1, error.Code);
+        Assert.Null(error.Error);
+    }
+
     private static KeyMintSDK CreateSdk(HttpMessageHandler handler)
     {
         return new KeyMintSDK("admin_test", new HttpClient(handler)
