@@ -120,6 +120,8 @@ namespace KeyMint.Services
         public string Message { get; set; } = "Keymint API request failed"; // Descriptive error message
         [JsonPropertyName("code")]
         public int Code { get; set; }    // API numeric error code
+        [JsonPropertyName("errorCode")]
+        public string? ErrorCode { get; set; } // Stable string error code (e.g. "license_not_found"); branch on this, not on Message
         [JsonPropertyName("status")]
         public int? Status { get; set; }  // HTTP status code, optional
         [JsonPropertyName("error")]

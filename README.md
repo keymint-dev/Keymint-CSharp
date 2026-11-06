@@ -197,6 +197,40 @@ Keymint provides utilities to uniquely identify machines for node-locking:
 |-------------------------|--------------------------------------------------|
 | `VerifyWebhookSignature`| Verifies the signature of a webhook request payload. |
 
+## Error Handling
+
+SDK methods don't throw for API errors. They return a `KeyMintResult<T>`, and when `IsSuccess` is false, `Error` is a `KeyMintApiError` with `Message`, `Code`, `ErrorCode` and `Status`. Branch on `ErrorCode`, a stable string such as `license_invalid_or_forbidden` or `rate_limited`, not on `Message`, which is written for people and may be reworded. See the [error code reference](https://keymint.dev/docs/api-reference/error-codes) for the full list.
+
+```csharp
+var result = await client.ActivateKey(new ActivateKeyParams {
+    ProductId = productId,
+    LicenseKey = licenseKey,
+    HostId = hostId
+});
+
+if (result.IsSuccess) {
+    Console.WriteLine($"Activated: {result.Data!.Message}");
+} else {
+    switch (result.Error!.ErrorCode) {
+        case "license_invalid_or_forbidden":
+            // Rejected: ask the user to re-enter the key or contact support.
+            break;
+        case "activation_limit_reached":
+            // Ask the user to deactivate another device.
+            break;
+        case "rate_limited":
+        case "service_unavailable":
+            // No answer yet: keep the last known state and retry later.
+            break;
+        default:
+            Console.WriteLine($"Keymint error {result.Error.ErrorCode ?? result.Error.Code.ToString()} (HTTP {result.Error.Status}): {result.Error.Message}");
+            break;
+    }
+}
+```
+
+`ErrorCode` is `null` when the response has none, for example a non-JSON body from a proxy or a network failure, where `Code` is `-1`. `Code` and `Error` (the legacy `error` field) are unchanged.
+
 ## Idempotency
 
 All mutating SDK methods support idempotency keys to safely retry requests in case of network drops. Pass a `RequestOptions` instance as the optional second argument:

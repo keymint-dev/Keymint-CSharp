@@ -373,6 +373,63 @@ public class ApiContractTests
         Assert.Null(error.Error);
     }
 
+    [Fact]
+    public async Task Api_errors_expose_error_code()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized)
+        {
+            Content = new StringContent(
+                "{\"message\":\"Invalid license key or insufficient permissions\",\"code\":1,\"errorCode\":\"license_invalid_or_forbidden\"}",
+                Encoding.UTF8,
+                "application/json")
+        });
+        var sdk = CreateSdk(handler);
+
+        var result = await sdk.ActivateKey(new ActivateKeyParams { ProductId = "product_123", LicenseKey = "key_123" });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("license_invalid_or_forbidden", result.Error!.ErrorCode);
+        Assert.Equal("Invalid license key or insufficient permissions", result.Error.Message);
+        Assert.Equal(1, result.Error.Code);
+        Assert.Equal(401, result.Error.Status);
+    }
+
+    [Fact]
+    public async Task Api_errors_without_error_code_leave_it_null()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+        {
+            Content = new StringContent("{\"message\":\"Too many requests\",\"code\":3}", Encoding.UTF8, "application/json")
+        });
+        var sdk = CreateSdk(handler);
+
+        var result = await sdk.ActivateKey(new ActivateKeyParams { ProductId = "product_123", LicenseKey = "key_123" });
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Error!.ErrorCode);
+        Assert.Equal("Too many requests", result.Error.Message);
+        Assert.Equal(3, result.Error.Code);
+        Assert.Equal(429, result.Error.Status);
+    }
+
+    [Fact]
+    public async Task Non_json_errors_have_no_error_code()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.BadGateway)
+        {
+            Content = new StringContent("<html>Bad Gateway</html>", Encoding.UTF8, "text/html")
+        });
+        var sdk = CreateSdk(handler);
+
+        var result = await sdk.ActivateKey(new ActivateKeyParams { ProductId = "product_123", LicenseKey = "key_123" });
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Error!.ErrorCode);
+        Assert.Equal(-1, result.Error.Code);
+        Assert.Equal(502, result.Error.Status);
+        Assert.StartsWith("HTTP error: BadGateway", result.Error.Message);
+    }
+
     private static KeyMintSDK CreateSdk(HttpMessageHandler handler)
     {
         return new KeyMintSDK("admin_test", new HttpClient(handler)
