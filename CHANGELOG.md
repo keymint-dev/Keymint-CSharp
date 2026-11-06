@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- `KeyMintApiError.ErrorCode`: the stable string error code the API now sends with every error (for example `license_invalid_or_forbidden`, `rate_limited`). Branch on it instead of `Message`. `null` when the response has none; existing properties are unchanged.
+
 ### Fixed
 
 - `KeyMintApiError.Error` now deserialises when the API sends `error` as a plain string (for example the 405 "Method not allowed" and the IP-allowlist 403) as well as an object. A string is kept in `Error.Message`; before, these responses failed to parse and returned a generic `HTTP error: ...` with `Code = -1`.
