@@ -233,7 +233,7 @@ if (result.IsSuccess) {
 
 ## Idempotency
 
-All mutating SDK methods support idempotency keys to safely retry requests in case of network drops. Pass a `RequestOptions` instance as the optional second argument:
+Mutating SDK methods accept an idempotency key so you can safely retry a request after a network drop. Pass a `RequestOptions` instance as the optional second argument:
 
 ```csharp
 var result = await client.CreateKey(new CreateKeyParams { 
@@ -243,10 +243,12 @@ var result = await client.CreateKey(new CreateKeyParams {
 });
 ```
 
-Use a fresh random UUID for each operation and reuse it only to retry that same operation. Never derive it from the license key or host ID: a replay returns the original response, including floating-session secrets.
+Use a fresh random UUID for each operation and reuse it only to retry that same operation. Never derive it from the license key or host ID: a replay returns the original response, which can include a newly created license key.
+
+The floating-license methods (`FloatingCheckout`, `FloatingHeartbeat`, `FloatingCheckin`) are the exception: the server ignores `Idempotency-Key` on them, so nothing is stored or replayed and a retry is a new request. Each heartbeat and check-in spends the single-use nonce it carries. If a checkout response is lost, the seat stays reserved until its lease expires.
 
 ## License
 MIT
 
 ## Support
-For help, see [Keymint API docs](https://docs.keymint.dev) or open an issue.
+For help, see [Keymint API docs](https://keymint.dev/docs) or open an issue.
