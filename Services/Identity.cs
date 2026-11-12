@@ -211,10 +211,18 @@ public static class KeyMintIdentity
     }
 
     /// <summary>
-    /// Returns a guaranteed-unique, guaranteed-stable installation identifier.
-    /// On first call, generates a UUIDv4 seeded with whatever hardware info
-    /// is available and persists it to disk. Every subsequent call returns the
-    /// same value.
+    /// Returns a persistent installation identifier.
+    /// On first call, combines a random GUID, the <see cref="GetMachineId"/>
+    /// fingerprint (empty if none could be read) and the current time, and
+    /// saves that value to disk. Returns the SHA-256 hash of the saved value,
+    /// so later calls return the same ID across restarts and app updates, and
+    /// hardware changes do not affect it.
+    /// <para>
+    /// The ID is random rather than derived from the hardware: a new one is
+    /// created if the file is deleted, after an OS reinstall, or for another
+    /// OS user. If the file cannot be written, no exception is thrown and each
+    /// call produces a new ID.
+    /// </para>
     /// <para>
     /// This is the <b>recommended</b> value to pass as <c>hostId</c> when
     /// activating a license key.
@@ -225,7 +233,7 @@ public static class KeyMintIdentity
     /// Defaults to ~/.keymint/installation-id.
     /// </param>
     /// <returns>A SHA-256 hashed 64-character hex string.</returns>
-    /// <exception cref="IOException">If the file cannot be read or written.</exception>
+    /// <exception cref="IOException">If an existing file cannot be read. Write failures are ignored.</exception>
     public static string GetOrCreateInstallationId(string? storagePath = null)
     {
         var filePath = storagePath ??
