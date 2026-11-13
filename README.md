@@ -20,27 +20,90 @@ dotnet add package KeyMint
 
 ## Usage
 
+Keymint API keys have a scope. Use two different keys, in two different places:
+
+- A **`client`** key, bound to one product, goes in the app you ship. It can only activate and deactivate devices and run floating-license sessions.
+- An **`admin`** key stays on your server. It creates, updates, signs, blocks and deletes keys and manages customers. **Never ship an admin key in an app.**
+
+Anything compiled into an app can be extracted from it, so treat any key you ship as public.
+
+### In your app (client key)
+
+Get this machine's installation ID, then activate. Calling `ActivateKey` again with the same `HostId` reuses that device's slot, so you can call it at start-up to check the license is still valid.
+
 ```csharp
 using KeyMint.Services;
 
-var apiKey = Environment.GetEnvironmentVariable("KEYMINT_API_KEY");
-var productId = Environment.GetEnvironmentVariable("KEYMINT_PRODUCT_ID");
+// A client-scoped API key bound to this product. Never put an admin key here.
+const string ClientApiKey = "YOUR_PRODUCT_BOUND_CLIENT_KEY";
+const string ProductId = "YOUR_PRODUCT_ID";
 
-var client = new KeyMintSDK(apiKey);
+var client = new KeyMintSDK(ClientApiKey);
 
-// 1. Get a stable, unique ID for this machine
+// 1. Get this installation's ID (see Machine Identity below)
 var hostId = KeyMintIdentity.GetOrCreateInstallationId();
 
-// 2. Create a key authorized only for this machine
-var result = await client.CreateKey(new CreateKeyParams { 
+var licenseKey = "the key your user entered";
+
+// 2. Activate (or re-check) the license on this machine
+var activation = await client.ActivateKey(new ActivateKeyParams {
+    ProductId = ProductId,
+    LicenseKey = licenseKey,
+    HostId = hostId
+});
+
+if (activation.IsSuccess) {
+    Console.WriteLine($"Activated: {activation.Data!.Message}");
+}
+
+// 3. Later, free this machine's slot (for example when the user moves to
+//    another computer). Client keys must pass HostId.
+var deactivation = await client.DeactivateKey(new DeactivateKeyParams {
+    ProductId = ProductId,
+    LicenseKey = licenseKey,
+    HostId = hostId
+});
+```
+
+`FloatingCheckout`, `FloatingHeartbeat` and `FloatingCheckin` also work with a client key.
+
+### On your server (admin key)
+
+Creating, updating, signing, blocking and deleting keys, and managing customers, need an admin key. Run this code on infrastructure you control and load the key from your server's environment or secret store.
+
+```csharp
+using KeyMint.Services;
+
+// Admin key: server only. Never ship this key in an app.
+var adminKey = Environment.GetEnvironmentVariable("KEYMINT_ADMIN_API_KEY")!;
+var productId = Environment.GetEnvironmentVariable("KEYMINT_PRODUCT_ID")!;
+
+var client = new KeyMintSDK(adminKey);
+
+// Create a customer
+var customer = await client.CreateCustomer(new CreateCustomerParams {
+    Name = "Ada Lovelace",
+    Email = "ada@example.com"
+});
+
+// Create a key. AllowedHosts is optional: to lock the key to one machine,
+// pass the host ID your app reported to your server.
+var result = await client.CreateKey(new CreateKeyParams {
     ProductId = productId,
-    AllowedHosts = new List<string> { hostId }
+    // AllowedHosts = new List<string> { hostIdFromYourApp }
 });
 
 if (result.IsSuccess) {
-    Console.WriteLine($"Created Key: {result.Data.Key}");
+    var key = result.Data!.Key!;
+    Console.WriteLine($"Created Key: {key}");
+
+    // Block a key, and unblock it again
+    await client.BlockKey(new BlockKeyParams { ProductId = productId, LicenseKey = key });
+    await client.UnblockKey(new UnblockKeyParams { ProductId = productId, LicenseKey = key });
 }
 ```
+
+Customer management (`CreateCustomer`, `UpdateCustomer`, `ToggleCustomerStatus`, `DeleteCustomer`) also needs an admin key. The read calls (`GetKey`, `GetAllCustomers`, `GetCustomerById`, `GetCustomerWithKeys`) need at least a `read-only` key, which a `client` key is not, so keep those on your server too.
 
 ## License Expiry
 
@@ -71,15 +134,16 @@ Store the last `ExpirationDate` you received. An expired license fails activatio
 
 An offline license is a `.lic` file holding an Ed25519-signed token bound to one product and one machine. `OfflineLicenseVerifier.Verify` checks it locally, with no network call.
 
-1. **Get the `.lic` file.** Download it from the dashboard (Offline License), or create it with `SignKey` (admin API key) while the machine is online. `HostId` is the machine code the license is bound to.
+1. **Get the `.lic` file.** Download it from the dashboard (Offline License), or create it with `SignKey` **on your server**: it needs an admin key. While the machine is online, your app sends its host ID to your server, which signs the license and returns the file. `HostId` is the machine code the license is bound to.
 
    ```csharp
-   var signed = await client.SignKey(new SignKeyParams { // admin API key
+   // On your server, with an admin-key client:
+   var signed = await adminClient.SignKey(new SignKeyParams {
        ProductId = productId,
        LicenseKey = licenseKey,
-       HostId = hostId
+       HostId = hostIdFromYourApp
    });
-   // signed.Data.File holds the .lic contents; save it on the machine.
+   // signed.Data.File holds the .lic contents; send it to the app to save.
    ```
 
 2. **Bundle your public key.** Copy the PEM from **Developer → Public Keys** in the dashboard and ship it with your app. It is a public key, so it is safe to ship; never ship an API key.
@@ -154,10 +218,10 @@ static DateTimeOffset TrustedNow()
 An offline license stays valid until it expires; blocking the key online does not revoke a file already issued.
 
 ## Machine Identity
-Keymint provides utilities to uniquely identify machines for node-locking:
+Keymint provides utilities to identify an installation for node-locking:
 
-- `KeyMintIdentity.GetOrCreateInstallationId()`: **Recommended.** Generates a stable UUID anchored to hardware and persists it to `~/.keymint/installation-id`.
-- `KeyMintIdentity.GetMachineId()`: Generates a SHA-256 fingerprint based on BIOS UUID, OS machine ID, and MAC address.
+- `KeyMintIdentity.GetOrCreateInstallationId(storagePath)`: **Recommended** as the `HostId`. On first call it combines a random GUID, the `GetMachineId()` fingerprint (empty if none could be read) and the current time, and saves that value to `storagePath` (default `~/.keymint/installation-id`, under the user profile folder). It returns the SHA-256 hash of the saved value, so later calls return the same ID across restarts and app updates, and hardware changes don't affect it. It is random, not derived from the hardware: a new ID is created if the file is deleted, after an OS reinstall, or for another OS user (each has their own profile folder). If the file can't be written, no exception is thrown and each call produces a new ID.
+- `KeyMintIdentity.GetMachineId()`: A best-effort SHA-256 fingerprint of the first usable value among the BIOS/hardware UUID, the OS machine ID (on macOS, the hardware serial number) and the first active network interface's MAC address. It can change after hardware changes or an OS reinstall, can collide on virtual machines, and returns `null` if nothing could be read.
 
 ## API Methods
 
@@ -186,7 +250,7 @@ Keymint provides utilities to uniquely identify machines for node-locking:
 | `CreateCustomer`      | Creates a new customer.                          |
 | `GetAllCustomers`     | Retrieves all customers.                         |
 | `GetCustomerById`     | Gets a specific customer by ID.                  |
-| `GetCustomerWithKeys` | Gets a customer along with their license keys.   |
+| `GetCustomerWithKeys` | Lists the license keys belonging to a customer.  |
 | `UpdateCustomer`      | Updates an existing customer's information.      |
 | `ToggleCustomerStatus`| Toggles a customer's active status.              |
 | `DeleteCustomer`      | Deletes a customer. Their license keys are kept; use `DeleteKey` to remove them. |
@@ -236,7 +300,8 @@ if (result.IsSuccess) {
 Mutating SDK methods accept an idempotency key so you can safely retry a request after a network drop. Pass a `RequestOptions` instance as the optional second argument:
 
 ```csharp
-var result = await client.CreateKey(new CreateKeyParams { 
+// On your server: CreateKey needs an admin key.
+var result = await client.CreateKey(new CreateKeyParams {
     ProductId = productId,
 }, new RequestOptions {
     IdempotencyKey = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
